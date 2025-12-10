@@ -1,7 +1,6 @@
 import { CircleX } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
 
 const click1 = "//daveceddia.com/freebies/react-metronome/click1.wav";
@@ -11,31 +10,23 @@ interface MetronomeProps {
   setShowCountMeter: (show: boolean) => void;
 }
 
+type CountType = 8 | 16;
+
 export default function Metronome({ setShowCountMeter }: MetronomeProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [count, setCount] = useState(0);
-  const [bpm, setBpm] = useState(100);
-  const [beatsPerMeasure] = useState(4);
+  const [countType, setCountType] = useState<CountType>(8);
+  const [bpm] = useState(120);
 
   const click1Ref = useRef(new Audio(click1));
   const click2Ref = useRef(new Audio(click2));
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  const handleBpmChange = (value: number[]) => {
-    const newBpm = value[0];
-
-    if (isPlaying && timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = setInterval(playClick, (60 / newBpm) * 1000);
-      setCount(0);
-    }
-
-    setBpm(newBpm);
-  };
+  const beatsPerMeasure = countType;
 
   const playClick = () => {
     setCount((prev) => {
-      if (prev % beatsPerMeasure === 0) {
+      if (prev % 4 === 0) {
         click2Ref.current.currentTime = 0;
         click2Ref.current.play();
       } else {
@@ -55,6 +46,15 @@ export default function Metronome({ setShowCountMeter }: MetronomeProps) {
       setCount(0);
       setIsPlaying(true);
       playClick();
+    }
+  };
+
+  const handleCountTypeChange = (type: CountType) => {
+    setCountType(type);
+    setCount(0);
+    if (isPlaying && timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = setInterval(playClick, (60 / bpm) * 1000);
     }
   };
 
@@ -82,9 +82,35 @@ export default function Metronome({ setShowCountMeter }: MetronomeProps) {
       </div>
 
       {/* Content */}
-      <div className="flex-1 flex flex-col items-center justify-center p-6 gap-8">
+      <div className="flex-1 flex flex-col items-center justify-center p-6 gap-6">
+        {/* Count Type Selector */}
+        <div className="flex gap-2 w-full">
+          <button
+            onClick={() => handleCountTypeChange(8)}
+            className={cn(
+              "flex-1 py-4 rounded-xl font-display text-2xl transition-all duration-200",
+              countType === 8
+                ? "bg-primary text-primary-foreground shadow-[0_0_20px_hsl(var(--primary)/0.4)]"
+                : "bg-secondary text-muted-foreground hover:bg-secondary/80 hover:text-foreground"
+            )}
+          >
+            8
+          </button>
+          <button
+            onClick={() => handleCountTypeChange(16)}
+            className={cn(
+              "flex-1 py-4 rounded-xl font-display text-2xl transition-all duration-200",
+              countType === 16
+                ? "bg-primary text-primary-foreground shadow-[0_0_20px_hsl(var(--primary)/0.4)]"
+                : "bg-secondary text-muted-foreground hover:bg-secondary/80 hover:text-foreground"
+            )}
+          >
+            16
+          </button>
+        </div>
+
         {/* Beat indicator */}
-        <div className="flex gap-3">
+        <div className="flex flex-wrap justify-center gap-2 max-w-[200px]">
           {Array.from({ length: beatsPerMeasure }).map((_, i) => (
             <div
               key={i}
@@ -92,40 +118,28 @@ export default function Metronome({ setShowCountMeter }: MetronomeProps) {
                 "w-4 h-4 rounded-full transition-all duration-100",
                 isPlaying && count === i
                   ? "bg-primary shadow-[0_0_12px_hsl(var(--primary))]"
+                  : i % 4 === 0
+                  ? "bg-muted-foreground/50"
                   : "bg-muted"
               )}
             />
           ))}
         </div>
 
-        {/* BPM display */}
+        {/* Current count display */}
         <div className="text-center">
-          <span className="font-display text-4xl text-foreground">{bpm}</span>
-          <span className="text-sm text-muted-foreground ml-2">BPM</span>
-        </div>
-
-        {/* Slider */}
-        <div className="w-full px-2">
-          <Slider
-            value={[bpm]}
-            min={60}
-            max={240}
-            step={1}
-            onValueChange={handleBpmChange}
-            className="w-full"
-          />
-          <div className="flex justify-between text-xs text-muted-foreground mt-2">
-            <span>60</span>
-            <span>240</span>
-          </div>
+          <span className="font-display text-5xl text-foreground">
+            {isPlaying ? count + 1 : "-"}
+          </span>
+          <span className="text-sm text-muted-foreground ml-2">/ {countType}</span>
         </div>
 
         {/* Start/Stop button */}
         <Button
-          variant={isPlaying ? "destructive" : "default"}
+          variant={isPlaying ? "destructive" : "glow"}
           size="lg"
           onClick={startStop}
-          className="w-full font-medium tracking-wide"
+          className="w-full font-medium tracking-wide text-lg py-6"
         >
           {isPlaying ? "STOP" : "START"}
         </Button>

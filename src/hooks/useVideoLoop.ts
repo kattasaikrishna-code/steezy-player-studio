@@ -33,29 +33,33 @@ export const useVideoLoop = ({ videoRef, duration }: UseVideoLoopProps) => {
   }, []);
 
   const toggleLoop = useCallback(() => {
-    if (!loopRange) {
-      setIsSettingLoop(true);
+    if (!videoRef.current) return;
+    
+    if (loopEnabled) {
+      // Disable loop
+      setLoopEnabled(false);
       return;
     }
-    setLoopEnabled(prev => !prev);
-  }, [loopRange]);
+    
+    // Enable loop: start from current time, end 15 seconds later
+    const currentTime = videoRef.current.currentTime;
+    const endTime = Math.min(currentTime + 15, duration);
+    
+    setLoopRange({ start: currentTime, end: endTime });
+    setLoopEnabled(true);
+    setIsSettingLoop(false);
+  }, [loopEnabled, videoRef, duration]);
 
   const setLoopFromCurrentTime = useCallback(() => {
     if (!videoRef.current) return;
     
     const currentTime = videoRef.current.currentTime;
+    const endTime = Math.min(currentTime + 15, duration);
     
-    if (!loopRange || !isSettingLoop) {
-      setLoopRange({ start: currentTime, end: duration });
-      setIsSettingLoop(true);
-    } else if (isSettingLoop) {
-      if (currentTime > loopRange.start) {
-        setLoopRange({ ...loopRange, end: currentTime });
-        setLoopEnabled(true);
-        setIsSettingLoop(false);
-      }
-    }
-  }, [videoRef, loopRange, isSettingLoop, duration]);
+    setLoopRange({ start: currentTime, end: endTime });
+    setLoopEnabled(true);
+    setIsSettingLoop(false);
+  }, [videoRef, duration]);
 
   // Check if current time is outside loop range and loop back
   useEffect(() => {
