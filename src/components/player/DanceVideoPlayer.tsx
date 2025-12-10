@@ -9,7 +9,7 @@ import { useCamera } from "@/hooks/useCamera";
 import { useVideoLoop } from "@/hooks/useVideoLoop";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import Metronome, { CountMeter } from "./CountMeter";
+import Metronome from "./CountMeter";
 
 interface DanceVideoPlayerProps {
   sources: { front: string; back: string };
@@ -45,9 +45,9 @@ export const DanceVideoPlayer: React.FC<DanceVideoPlayerProps> = ({
   // Camera hook
   const {
     isCameraOn,
-    videoRef: cameraRef,
     toggleCamera,
     cameraError,
+    attachStreamToVideo,
   } = useCamera();
 
   // Loop hook
@@ -313,9 +313,9 @@ export const DanceVideoPlayer: React.FC<DanceVideoPlayerProps> = ({
           {/* Camera preview */}
           {isCameraOn && (
             <CameraPreview
-              ref={cameraRef}
               isMirrored={isMirrored}
               onClose={handleCameraToggle}
+              onVideoRef={attachStreamToVideo}
             />
           )}
 

@@ -3,8 +3,14 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 export const useCamera = () => {
   const [isCameraOn, setIsCameraOn] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
-  const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+
+  const attachStreamToVideo = useCallback((videoElement: HTMLVideoElement | null) => {
+    if (videoElement && streamRef.current) {
+      videoElement.srcObject = streamRef.current;
+      videoElement.play().catch(console.error);
+    }
+  }, []);
 
   const startCamera = useCallback(async () => {
     try {
@@ -19,12 +25,6 @@ export const useCamera = () => {
       });
       
       streamRef.current = stream;
-      
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play();
-      }
-      
       setIsCameraOn(true);
     } catch (error) {
       console.error('Error accessing camera:', error);
@@ -38,11 +38,6 @@ export const useCamera = () => {
       streamRef.current.getTracks().forEach(track => track.stop());
       streamRef.current = null;
     }
-    
-    if (videoRef.current) {
-      videoRef.current.srcObject = null;
-    }
-    
     setIsCameraOn(false);
   }, []);
 
@@ -63,9 +58,9 @@ export const useCamera = () => {
   return {
     isCameraOn,
     cameraError,
-    videoRef,
     toggleCamera,
     startCamera,
     stopCamera,
+    attachStreamToVideo,
   };
 };
