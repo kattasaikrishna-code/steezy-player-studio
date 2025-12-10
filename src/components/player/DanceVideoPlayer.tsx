@@ -1,14 +1,15 @@
-import React, { useRef, useState, useCallback, useEffect } from 'react';
-import ReactAllPlayer from 'react-all-player';
-import { VideoSection, ViewMode, LoopRange } from '@/types/player';
-import { Timeline } from './Timeline';
-import { VideoControls } from './VideoControls';
-import { SectionsSidebar } from './SectionsSidebar';
-import { CameraPreview } from './CameraPreview';
-import { useCamera } from '@/hooks/useCamera';
-import { useVideoLoop } from '@/hooks/useVideoLoop';
-import { cn } from '@/lib/utils';
-import { toast } from 'sonner';
+import React, { useRef, useState, useCallback, useEffect } from "react";
+import ReactAllPlayer from "react-all-player";
+import { VideoSection, ViewMode, LoopRange } from "@/types/player";
+import { Timeline } from "./Timeline";
+import { VideoControls } from "./VideoControls";
+import { SectionsSidebar } from "./SectionsSidebar";
+import { CameraPreview } from "./CameraPreview";
+import { useCamera } from "@/hooks/useCamera";
+import { useVideoLoop } from "@/hooks/useVideoLoop";
+import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+import Metronome, { CountMeter } from "./CountMeter";
 
 interface DanceVideoPlayerProps {
   sources: { front: string; back: string };
@@ -25,7 +26,7 @@ export const DanceVideoPlayer: React.FC<DanceVideoPlayerProps> = ({
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  
+
   // Player state
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -35,13 +36,19 @@ export const DanceVideoPlayer: React.FC<DanceVideoPlayerProps> = ({
   const [playbackRate, setPlaybackRate] = useState(1);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isMirrored, setIsMirrored] = useState(false);
-  const [viewMode, setViewMode] = useState<ViewMode>('front');
+  const [viewMode, setViewMode] = useState<ViewMode>("front");
   const [activeSection, setActiveSection] = useState<string | null>(null);
-  const [showSidebar, setShowSidebar] = useState(true);
+  const [showSidebar, setShowSidebar] = useState(false);
+  const [showCountMeter, setShowCountMeter] = useState(false);
   const [controlsVisible, setControlsVisible] = useState(true);
 
   // Camera hook
-  const { isCameraOn, videoRef: cameraRef, toggleCamera, cameraError } = useCamera();
+  const {
+    isCameraOn,
+    videoRef: cameraRef,
+    toggleCamera,
+    cameraError,
+  } = useCamera();
 
   // Loop hook
   const {
@@ -86,13 +93,19 @@ export const DanceVideoPlayer: React.FC<DanceVideoPlayerProps> = ({
     }
   }, []);
 
-  const handleSeekRelative = useCallback((seconds: number) => {
-    if (videoRef.current) {
-      const newTime = Math.max(0, Math.min(duration, videoRef.current.currentTime + seconds));
-      videoRef.current.currentTime = newTime;
-      setCurrentTime(newTime);
-    }
-  }, [duration]);
+  const handleSeekRelative = useCallback(
+    (seconds: number) => {
+      if (videoRef.current) {
+        const newTime = Math.max(
+          0,
+          Math.min(duration, videoRef.current.currentTime + seconds)
+        );
+        videoRef.current.currentTime = newTime;
+        setCurrentTime(newTime);
+      }
+    },
+    [duration]
+  );
 
   const handleVolumeChange = useCallback((value: number) => {
     if (videoRef.current) {
@@ -129,13 +142,13 @@ export const DanceVideoPlayer: React.FC<DanceVideoPlayerProps> = ({
         setIsFullscreen(false);
       }
     } catch (error) {
-      console.error('Fullscreen error:', error);
+      console.error("Fullscreen error:", error);
     }
   }, []);
 
   const handleMirrorToggle = useCallback(() => {
     setIsMirrored(!isMirrored);
-    toast.success(isMirrored ? 'Mirror mode off' : 'Mirror mode on');
+    toast.success(isMirrored ? "Mirror mode off" : "Mirror mode on");
   }, [isMirrored]);
 
   const handleViewModeChange = useCallback((mode: ViewMode) => {
@@ -143,19 +156,25 @@ export const DanceVideoPlayer: React.FC<DanceVideoPlayerProps> = ({
     toast.success(`Switched to ${mode} view`);
   }, []);
 
-  const handleSectionClick = useCallback((section: VideoSection) => {
-    handleSeek(section.startTime);
-    setActiveSection(section.id);
-  }, [handleSeek]);
+  const handleSectionClick = useCallback(
+    (section: VideoSection) => {
+      handleSeek(section.startTime);
+      setActiveSection(section.id);
+    },
+    [handleSeek]
+  );
 
-  const handleLoopRangeChange = useCallback((range: LoopRange) => {
-    setLoopRange(range);
-  }, [setLoopRange]);
+  const handleLoopRangeChange = useCallback(
+    (range: LoopRange) => {
+      setLoopRange(range);
+    },
+    [setLoopRange]
+  );
 
   const handleCameraToggle = useCallback(async () => {
     await toggleCamera();
     if (!isCameraOn) {
-      toast.success('Camera turned on');
+      toast.success("Camera turned on");
     }
   }, [toggleCamera, isCameraOn]);
 
@@ -172,34 +191,41 @@ export const DanceVideoPlayer: React.FC<DanceVideoPlayerProps> = ({
       if (e.target instanceof HTMLInputElement) return;
 
       switch (e.key.toLowerCase()) {
-        case ' ':
+        case " ":
           e.preventDefault();
           handlePlayPause();
           break;
-        case 'arrowleft':
+        case "arrowleft":
           handleSeekRelative(-5);
           break;
-        case 'arrowright':
+        case "arrowright":
           handleSeekRelative(5);
           break;
-        case 'm':
+        case "m":
           handleMuteToggle();
           break;
-        case 'f':
+        case "f":
           handleFullscreenToggle();
           break;
-        case 'l':
+        case "l":
           toggleLoop();
           break;
-        case 'h':
+        case "h":
           handleMirrorToggle();
           break;
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handlePlayPause, handleSeekRelative, handleMuteToggle, handleFullscreenToggle, toggleLoop, handleMirrorToggle]);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [
+    handlePlayPause,
+    handleSeekRelative,
+    handleMuteToggle,
+    handleFullscreenToggle,
+    toggleLoop,
+    handleMirrorToggle,
+  ]);
 
   // Controls visibility
   useEffect(() => {
@@ -217,20 +243,20 @@ export const DanceVideoPlayer: React.FC<DanceVideoPlayerProps> = ({
 
     const container = containerRef.current;
     if (container) {
-      container.addEventListener('mousemove', showControls);
-      container.addEventListener('mouseenter', showControls);
+      container.addEventListener("mousemove", showControls);
+      container.addEventListener("mouseenter", showControls);
     }
 
     return () => {
       clearTimeout(timeout);
       if (container) {
-        container.removeEventListener('mousemove', showControls);
-        container.removeEventListener('mouseenter', showControls);
+        container.removeEventListener("mousemove", showControls);
+        container.removeEventListener("mouseenter", showControls);
       }
     };
   }, [isPlaying]);
 
-  const currentSource = viewMode === 'front' ? sources.front : sources.back;
+  const currentSource = viewMode === "front" ? sources.front : sources.back;
 
   return (
     <div className="flex h-full bg-background">
@@ -238,13 +264,30 @@ export const DanceVideoPlayer: React.FC<DanceVideoPlayerProps> = ({
       <div className="flex-1 flex flex-col">
         {/* Title bar */}
         {title && (
-          <div className="px-6 py-4 border-b border-border">
+          <div className="px-6 py-6 border-b border-border">
             <h1 className="font-display text-2xl tracking-wide">{title}</h1>
           </div>
         )}
+        {!showSidebar && !showCountMeter && (
+          <button
+            className="absolute top-6 right-6 z-10 px-4 py-2 bg-card/80 backdrop-blur-sm rounded-lg text-sm font-medium bg-primary/20 text-primary hover:bg-primary/30 transition-colors"
+            onClick={() => setShowSidebar(!showSidebar)}
+          >
+            View Sections
+          </button>
+        )}
+
+        {!showCountMeter && !showSidebar && (
+          <button
+            className="absolute top-6 right-8 mr-[8rem] z-10 px-4 py-2 bg-card/80 backdrop-blur-sm rounded-lg text-sm font-medium bg-primary/20 text-primary hover:bg-primary/30 transition-colors"
+            onClick={() => setShowCountMeter(!showCountMeter)}
+          >
+            Count Meter
+          </button>
+        )}
 
         {/* Video container */}
-        <div 
+        <div
           ref={containerRef}
           className={cn(
             "relative flex-1 bg-player-bg overflow-hidden",
@@ -290,7 +333,7 @@ export const DanceVideoPlayer: React.FC<DanceVideoPlayerProps> = ({
           )}
 
           {/* Controls overlay */}
-          <div 
+          <div
             className={cn(
               "absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent",
               "p-4 transition-opacity duration-300",
@@ -346,8 +389,10 @@ export const DanceVideoPlayer: React.FC<DanceVideoPlayerProps> = ({
           currentTime={currentTime}
           activeSection={activeSection}
           onSectionClick={handleSectionClick}
+          setShowSidebar={setShowSidebar}
         />
       )}
+      {showCountMeter && <Metronome setShowCountMeter={setShowCountMeter} />}
     </div>
   );
 };

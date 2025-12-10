@@ -1,10 +1,10 @@
-import React from 'react';
-import { 
-  Play, 
-  Pause, 
-  Volume2, 
-  VolumeX, 
-  Maximize, 
+import React from "react";
+import {
+  Play,
+  Pause,
+  Volume2,
+  VolumeX,
+  Maximize,
   Minimize,
   RotateCcw,
   FlipHorizontal,
@@ -14,18 +14,18 @@ import {
   RefreshCw,
   SkipBack,
   SkipForward,
-  Gauge
-} from 'lucide-react';
-import { ControlButton } from './ControlButton';
-import { Slider } from '@/components/ui/slider';
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuTrigger 
-} from '@/components/ui/dropdown-menu';
-import { Button } from '@/components/ui/button';
-import { ViewMode } from '@/types/player';
+  Gauge,
+} from "lucide-react";
+import { ControlButton } from "./ControlButton";
+import { Slider } from "@/components/ui/slider";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
+import { ViewMode } from "@/types/player";
 
 interface VideoControlsProps {
   isPlaying: boolean;
@@ -57,7 +57,7 @@ interface VideoControlsProps {
 const formatTime = (seconds: number): string => {
   const mins = Math.floor(seconds / 60);
   const secs = Math.floor(seconds % 60);
-  return `${mins}:${secs.toString().padStart(2, '0')}`;
+  return `${mins}:${secs.toString().padStart(2, "0")}`;
 };
 
 const playbackRates = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2];
@@ -97,14 +97,20 @@ export const VideoControls: React.FC<VideoControlsProps> = ({
           label="Back 5s"
           onClick={() => onSeekRelative(-5)}
         />
-        
+
         <ControlButton
-          icon={isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
+          icon={
+            isPlaying ? (
+              <Pause className="w-5 h-5" />
+            ) : (
+              <Play className="w-5 h-5" />
+            )
+          }
           label={isPlaying ? "Pause" : "Play"}
           onClick={onPlayPause}
           size="lg"
         />
-        
+
         <ControlButton
           icon={<SkipForward className="w-4 h-4" />}
           label="Forward 5s"
@@ -114,7 +120,13 @@ export const VideoControls: React.FC<VideoControlsProps> = ({
         {/* Volume */}
         <div className="flex items-center gap-2 ml-2">
           <ControlButton
-            icon={isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+            icon={
+              isMuted ? (
+                <VolumeX className="w-4 h-4" />
+              ) : (
+                <Volume2 className="w-4 h-4" />
+              )
+            }
             label={isMuted ? "Unmute" : "Mute"}
             onClick={onMuteToggle}
           />
@@ -134,15 +146,21 @@ export const VideoControls: React.FC<VideoControlsProps> = ({
       </div>
 
       {/* Center controls - Dance specific */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 mr-[10rem]">
         {/* Loop controls */}
         <ControlButton
           icon={<Repeat className="w-4 h-4" />}
-          label={loopEnabled ? "Disable Loop" : (isSettingLoop ? "Set End Point" : "Enable Loop")}
+          label={
+            loopEnabled
+              ? "Disable Loop"
+              : isSettingLoop
+              ? "Set End Point"
+              : "Enable Loop"
+          }
           onClick={onLoopToggle}
           active={loopEnabled || isSettingLoop}
         />
-        
+
         {(loopEnabled || isSettingLoop) && (
           <ControlButton
             icon={<RotateCcw className="w-4 h-4" />}
@@ -178,15 +196,15 @@ export const VideoControls: React.FC<VideoControlsProps> = ({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent className="bg-card border-border">
-            <DropdownMenuItem 
-              onClick={() => onViewModeChange('front')}
-              className={viewMode === 'front' ? 'bg-primary/20' : ''}
+            <DropdownMenuItem
+              onClick={() => onViewModeChange("front")}
+              className={viewMode === "front" ? "bg-primary/20" : ""}
             >
               Front View
             </DropdownMenuItem>
-            <DropdownMenuItem 
-              onClick={() => onViewModeChange('back')}
-              className={viewMode === 'back' ? 'bg-primary/20' : ''}
+            <DropdownMenuItem
+              onClick={() => onViewModeChange("back")}
+              className={viewMode === "back" ? "bg-primary/20" : ""}
             >
               Back View
             </DropdownMenuItem>
@@ -195,7 +213,13 @@ export const VideoControls: React.FC<VideoControlsProps> = ({
 
         {/* Camera */}
         <ControlButton
-          icon={isCameraOn ? <CameraOff className="w-4 h-4" /> : <Camera className="w-4 h-4" />}
+          icon={
+            isCameraOn ? (
+              <CameraOff className="w-4 h-4" />
+            ) : (
+              <Camera className="w-4 h-4" />
+            )
+          }
           label={isCameraOn ? "Turn Off Camera" : "Turn On Camera"}
           onClick={onCameraToggle}
           active={isCameraOn}
@@ -213,11 +237,11 @@ export const VideoControls: React.FC<VideoControlsProps> = ({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent className="bg-card border-border">
-            {playbackRates.map(rate => (
-              <DropdownMenuItem 
+            {playbackRates.map((rate) => (
+              <DropdownMenuItem
                 key={rate}
                 onClick={() => onPlaybackRateChange(rate)}
-                className={playbackRate === rate ? 'bg-primary/20' : ''}
+                className={playbackRate === rate ? "bg-primary/20" : ""}
               >
                 {rate}x
               </DropdownMenuItem>
@@ -227,7 +251,13 @@ export const VideoControls: React.FC<VideoControlsProps> = ({
 
         {/* Fullscreen */}
         <ControlButton
-          icon={isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
+          icon={
+            isFullscreen ? (
+              <Minimize className="w-4 h-4" />
+            ) : (
+              <Maximize className="w-4 h-4" />
+            )
+          }
           label={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
           onClick={onFullscreenToggle}
         />
