@@ -146,7 +146,7 @@ export const VideoControls: React.FC<VideoControlsProps> = ({
       </div>
 
       {/* Center controls - Dance specific */}
-      <div className="flex items-center gap-2 mr-[10rem]">
+      <div className="flex items-center gap-5 mr-[15rem]">
         {/* Loop controls */}
         <ControlButton
           icon={<Repeat className="w-4 h-4" />}
@@ -157,7 +157,7 @@ export const VideoControls: React.FC<VideoControlsProps> = ({
               ? "Set End Point"
               : "Enable Loop"
           }
-          onClick={onLoopToggle}
+          onClick={loopEnabled ? onClearLoop : onLoopToggle}
           active={loopEnabled || isSettingLoop}
         />
 
@@ -231,7 +231,11 @@ export const VideoControls: React.FC<VideoControlsProps> = ({
         {/* Playback Speed */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="control" size="sm" className="gap-1 min-w-[70px]">
+            <Button
+              variant="control"
+              size="sm"
+              className="flex flex-row items-center gap-1 min-w-[70px] leading-none"
+            >
               <Gauge className="w-4 h-4" />
               {playbackRate}x
             </Button>

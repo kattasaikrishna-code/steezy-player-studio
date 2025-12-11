@@ -1,5 +1,5 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
-import { LoopRange } from '@/types/player';
+import { useState, useCallback, useEffect, useRef } from "react";
+import { LoopRange } from "@/types/player";
 
 interface UseVideoLoopProps {
   videoRef: React.RefObject<HTMLVideoElement>;
@@ -12,15 +12,18 @@ export const useVideoLoop = ({ videoRef, duration }: UseVideoLoopProps) => {
   const [isSettingLoop, setIsSettingLoop] = useState(false);
   const loopCheckInterval = useRef<number | null>(null);
 
-  const setLoopStart = useCallback((time: number) => {
-    setLoopRange(prev => ({
-      start: time,
-      end: prev?.end ?? duration,
-    }));
-  }, [duration]);
+  const setLoopStart = useCallback(
+    (time: number) => {
+      setLoopRange((prev) => ({
+        start: time,
+        end: prev?.end ?? duration,
+      }));
+    },
+    [duration]
+  );
 
   const setLoopEnd = useCallback((time: number) => {
-    setLoopRange(prev => ({
+    setLoopRange((prev) => ({
       start: prev?.start ?? 0,
       end: time,
     }));
@@ -34,16 +37,19 @@ export const useVideoLoop = ({ videoRef, duration }: UseVideoLoopProps) => {
 
   const toggleLoop = useCallback(() => {
     if (!videoRef.current) return;
-    
-    setLoopEnabled(prev => {
+
+    setLoopEnabled((prev) => {
       if (prev) {
         // Currently enabled, disable it
         return false;
       } else {
         // Currently disabled, enable with new range
-        const currentTime = videoRef.current!.currentTime;
-        const endTime = Math.min(currentTime + 15, duration);
-        setLoopRange({ start: currentTime, end: endTime });
+        const currentTime = videoRef.current!.currentTime;       
+        const endTime = Math.min(currentTime + 10, duration);
+        setLoopRange({
+          start: currentTime === 0 ? 0 : currentTime - 10,
+          end: endTime,
+        });
         setIsSettingLoop(false);
         return true;
       }
@@ -52,10 +58,10 @@ export const useVideoLoop = ({ videoRef, duration }: UseVideoLoopProps) => {
 
   const setLoopFromCurrentTime = useCallback(() => {
     if (!videoRef.current) return;
-    
+
     const currentTime = videoRef.current.currentTime;
     const endTime = Math.min(currentTime + 15, duration);
-    
+
     setLoopRange({ start: currentTime, end: endTime });
     setLoopEnabled(true);
     setIsSettingLoop(false);
@@ -73,9 +79,9 @@ export const useVideoLoop = ({ videoRef, duration }: UseVideoLoopProps) => {
 
     loopCheckInterval.current = window.setInterval(() => {
       if (!videoRef.current || !loopRange) return;
-      
+
       const currentTime = videoRef.current.currentTime;
-      
+
       if (currentTime >= loopRange.end || currentTime < loopRange.start) {
         videoRef.current.currentTime = loopRange.start;
       }

@@ -52,7 +52,7 @@ const demoSections: VideoSection[] = [
 const demoSources = {
   front:
     "https://cdn.plyr.io/static/demo/View_From_A_Blue_Moon_Trailer-1080p.mp4",
-  back: "https://cdn.plyr.io/static/demo/View_From_A_Blue_Moon_Trailer-1080p.mp4",
+  back: "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
 };
 
 const Index = () => {

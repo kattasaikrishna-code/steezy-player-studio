@@ -10,6 +10,7 @@ import { useVideoLoop } from "@/hooks/useVideoLoop";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import Metronome from "./CountMeter";
+import CountMeter2 from "./CountMeter2";
 
 interface DanceVideoPlayerProps {
   sources: { front: string; back: string };
@@ -26,7 +27,9 @@ export const DanceVideoPlayer: React.FC<DanceVideoPlayerProps> = ({
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const pendingSeekRef = useRef<{ time: number; shouldPlay: boolean } | null>(null);
+  const pendingSeekRef = useRef<{ time: number; shouldPlay: boolean } | null>(
+    null
+  );
 
   // Player state
   const [isPlaying, setIsPlaying] = useState(false);
@@ -41,15 +44,12 @@ export const DanceVideoPlayer: React.FC<DanceVideoPlayerProps> = ({
   const [activeSection, setActiveSection] = useState<string | null>(null);
   const [showSidebar, setShowSidebar] = useState(false);
   const [showCountMeter, setShowCountMeter] = useState(false);
+  const [showCountMeter2, setShowCountMeter2] = useState(false);
   const [controlsVisible, setControlsVisible] = useState(true);
 
   // Camera hook
-  const {
-    isCameraOn,
-    toggleCamera,
-    cameraError,
-    attachStreamToVideo,
-  } = useCamera();
+  const { isCameraOn, toggleCamera, cameraError, attachStreamToVideo } =
+    useCamera();
 
   // Loop hook
   const {
@@ -154,13 +154,13 @@ export const DanceVideoPlayer: React.FC<DanceVideoPlayerProps> = ({
 
   const handleViewModeChange = useCallback((mode: ViewMode) => {
     if (!videoRef.current) return;
-    
+
     // Store the current time and playing state to restore after source change
     pendingSeekRef.current = {
       time: videoRef.current.currentTime,
-      shouldPlay: !videoRef.current.paused
+      shouldPlay: !videoRef.current.paused,
     };
-    
+
     setViewMode(mode);
     toast.success(`Switched to ${mode} view`);
   }, []);
@@ -298,12 +298,29 @@ export const DanceVideoPlayer: React.FC<DanceVideoPlayerProps> = ({
         )}
 
         {!showCountMeter && !showSidebar && (
-          <button
-            className="absolute top-6 right-8 mr-[8rem] z-10 px-4 py-2 bg-card/80 backdrop-blur-sm rounded-lg text-sm font-medium bg-primary/20 text-primary hover:bg-primary/30 transition-colors"
-            onClick={() => setShowCountMeter(!showCountMeter)}
-          >
-            Count Meter
-          </button>
+          <div className="absolute top-6 right-8 mr-[8rem] z-10 flex gap-2">
+            {!showCountMeter2 && (
+              <button
+                className="px-4 py-2 bg-card/80 backdrop-blur-sm rounded-lg text-sm font-medium bg-primary/20 text-primary hover:bg-primary/30 transition-colors"
+                onClick={() => setShowCountMeter(!showCountMeter)}
+              >
+                Count Meter
+              </button>
+            )}
+            {!showCountMeter && (
+              <button
+                className={cn(
+                  "px-4 py-2 bg-card/80 backdrop-blur-sm rounded-lg text-sm font-medium transition-colors",
+                  showCountMeter2
+                    ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                    : "bg-primary/20 text-primary hover:bg-primary/30"
+                )}
+                onClick={() => setShowCountMeter2(!showCountMeter2)}
+              >
+                Metronome
+              </button>
+            )}
+          </div>
         )}
 
         {/* Video container */}
@@ -414,6 +431,9 @@ export const DanceVideoPlayer: React.FC<DanceVideoPlayerProps> = ({
         />
       )}
       {showCountMeter && <Metronome setShowCountMeter={setShowCountMeter} />}
+      {showCountMeter2 && (
+        <CountMeter2 setShowCountMeter={setShowCountMeter2} />
+      )}
     </div>
   );
 };

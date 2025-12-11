@@ -110,7 +110,7 @@ export default function Metronome({ setShowCountMeter }: MetronomeProps) {
         </div>
 
         {/* Beat indicator */}
-        <div className="flex flex-wrap justify-center gap-2 max-w-[200px]">
+        <div className="flex flex-wrap justify-center gap-2 mt-[50px] max-w-[200px]">
           {Array.from({ length: beatsPerMeasure }).map((_, i) => (
             <div
               key={i}
@@ -127,19 +127,21 @@ export default function Metronome({ setShowCountMeter }: MetronomeProps) {
         </div>
 
         {/* Current count display */}
-        <div className="text-center">
+        {/* <div className="text-center">
           <span className="font-display text-5xl text-foreground">
             {isPlaying ? count + 1 : "-"}
           </span>
-          <span className="text-sm text-muted-foreground ml-2">/ {countType}</span>
-        </div>
+          <span className="text-sm text-muted-foreground ml-2">
+            / {countType}
+          </span>
+        </div> */}
 
         {/* Start/Stop button */}
         <Button
           variant={isPlaying ? "destructive" : "glow"}
           size="lg"
           onClick={startStop}
-          className="w-full font-medium tracking-wide text-lg py-6"
+          className="w-full font-medium tracking-wide text-lg mt-[50px] py-6"
         >
           {isPlaying ? "STOP" : "START"}
         </Button>
