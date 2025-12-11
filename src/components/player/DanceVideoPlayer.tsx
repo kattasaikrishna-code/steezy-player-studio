@@ -26,6 +26,7 @@ export const DanceVideoPlayer: React.FC<DanceVideoPlayerProps> = ({
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const pendingSeekRef = useRef<{ time: number; shouldPlay: boolean } | null>(null);
 
   // Player state
   const [isPlaying, setIsPlaying] = useState(false);
@@ -154,23 +155,25 @@ export const DanceVideoPlayer: React.FC<DanceVideoPlayerProps> = ({
   const handleViewModeChange = useCallback((mode: ViewMode) => {
     if (!videoRef.current) return;
     
-    const savedTime = videoRef.current.currentTime;
-    const wasPlaying = !videoRef.current.paused;
+    // Store the current time and playing state to restore after source change
+    pendingSeekRef.current = {
+      time: videoRef.current.currentTime,
+      shouldPlay: !videoRef.current.paused
+    };
     
     setViewMode(mode);
-    
-    // After source changes, restore the time position
-    const video = videoRef.current;
-    const handleLoadedData = () => {
-      video.currentTime = savedTime;
-      if (wasPlaying) {
-        video.play();
-      }
-      video.removeEventListener('loadeddata', handleLoadedData);
-    };
-    video.addEventListener('loadeddata', handleLoadedData);
-    
     toast.success(`Switched to ${mode} view`);
+  }, []);
+
+  // Handle restoring time position when video source changes
+  const handleCanPlay = useCallback(() => {
+    if (pendingSeekRef.current && videoRef.current) {
+      videoRef.current.currentTime = pendingSeekRef.current.time;
+      if (pendingSeekRef.current.shouldPlay) {
+        videoRef.current.play();
+      }
+      pendingSeekRef.current = null;
+    }
   }, []);
 
   const handleSectionClick = useCallback(
@@ -322,6 +325,7 @@ export const DanceVideoPlayer: React.FC<DanceVideoPlayerProps> = ({
             )}
             onTimeUpdate={handleTimeUpdate}
             onLoadedMetadata={handleLoadedMetadata}
+            onCanPlay={handleCanPlay}
             onPlay={() => setIsPlaying(true)}
             onPause={() => setIsPlaying(false)}
             onClick={handlePlayPause}
