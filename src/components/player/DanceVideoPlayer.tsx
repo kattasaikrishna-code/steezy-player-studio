@@ -152,7 +152,24 @@ export const DanceVideoPlayer: React.FC<DanceVideoPlayerProps> = ({
   }, [isMirrored]);
 
   const handleViewModeChange = useCallback((mode: ViewMode) => {
+    if (!videoRef.current) return;
+    
+    const savedTime = videoRef.current.currentTime;
+    const wasPlaying = !videoRef.current.paused;
+    
     setViewMode(mode);
+    
+    // After source changes, restore the time position
+    const video = videoRef.current;
+    const handleLoadedData = () => {
+      video.currentTime = savedTime;
+      if (wasPlaying) {
+        video.play();
+      }
+      video.removeEventListener('loadeddata', handleLoadedData);
+    };
+    video.addEventListener('loadeddata', handleLoadedData);
+    
     toast.success(`Switched to ${mode} view`);
   }, []);
 
