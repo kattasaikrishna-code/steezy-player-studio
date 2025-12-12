@@ -208,7 +208,7 @@ export default function CountMeter2({ setShowCountMeter }: MetronomeProps) {
         </div>
 
         {/* Visual Beats */}
-        <div className="flex flex-col mt-[150px] gap-3 p-4 bg-muted/30 rounded-xl border border-border/50">
+        <div className="flex flex-col mt-[100px] gap-3 p-4 bg-muted/30 rounded-xl border border-border/50">
           <div className="flex justify-between items-center">
             <span className="text-xs font-medium text-muted-foreground uppercase">
               Beats
