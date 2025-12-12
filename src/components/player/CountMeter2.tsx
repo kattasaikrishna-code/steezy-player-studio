@@ -10,8 +10,10 @@ interface MetronomeProps {
 
 export default function CountMeter2({ setShowCountMeter }: MetronomeProps) {
   const [isPlaying, setIsPlaying] = useState(false);
-  const [bpm, setBpm] = useState(100);
+  const [bpm, setBpm] = useState(120);
+
   const [beatsPerMeasure, setBeatsPerMeasure] = useState(8);
+  const bpmRef = useRef(bpm);
   const [count, setCount] = useState(0);
   const [stressFirstBeat, setStressFirstBeat] = useState(true);
 
@@ -64,8 +66,13 @@ export default function CountMeter2({ setShowCountMeter }: MetronomeProps) {
     playClickRef.current = playClick;
   }, [stressFirstBeat, beatsPerMeasure, playClick]); // Added playClick to dependencies
 
+  // Ensure bpmRef is always in sync with state
+  useEffect(() => {
+    bpmRef.current = bpm;
+  }, [bpm]);
+
   const nextNote = () => {
-    const secondsPerBeat = 60.0 / bpm;
+    const secondsPerBeat = 60.0 / bpmRef.current;
     nextNoteTimeRef.current += secondsPerBeat;
   };
 
@@ -168,7 +175,7 @@ export default function CountMeter2({ setShowCountMeter }: MetronomeProps) {
       <div className="flex-1 flex flex-col p-6 gap-6 overflow-y-auto">
         {/* BPM Display & Control */}
         <div className="flex flex-col items-center gap-2">
-          <span className="text-muted-foreground text-sm uppercase tracking-widest font-medium">
+          {/* <span className="text-muted-foreground text-sm uppercase tracking-widest font-medium">
             {getTempoMarking(bpm)}
           </span>
           <div className="flex items-center gap-4 w-full justify-center">
@@ -186,9 +193,9 @@ export default function CountMeter2({ setShowCountMeter }: MetronomeProps) {
             <Button variant="outline" size="icon" onClick={() => adjustBpm(1)}>
               <Plus className="w-4 h-4" />
             </Button>
-          </div>
+          </div> */}
 
-          <div className="w-full px-2 pt-4">
+          {/* <div className="w-full px-2 pt-4">
             <Slider
               value={[bpm]}
               min={20}
@@ -197,31 +204,11 @@ export default function CountMeter2({ setShowCountMeter }: MetronomeProps) {
               onValueChange={handleBpmChange}
               className="w-full"
             />
-          </div>
+          </div> */}
         </div>
 
-        {/* Start/Stop Button */}
-        <Button
-          variant={isPlaying ? "destructive" : "glow"}
-          size="lg"
-          onClick={startStop}
-          className="w-full font-medium tracking-wide text-lg py-8 rounded-2xl shadow-lg transition-all active:scale-[0.98]"
-        >
-          {isPlaying ? (
-            <div className="flex items-center gap-2">
-              <Square className="w-5 h-5 fill-current" />
-              STOP
-            </div>
-          ) : (
-            <div className="flex items-center gap-2">
-              <Play className="w-5 h-5 fill-current" />
-              START
-            </div>
-          )}
-        </Button>
-
         {/* Visual Beats */}
-        <div className="flex flex-col gap-3 p-4 bg-muted/30 rounded-xl border border-border/50">
+        <div className="flex flex-col mt-[150px] gap-3 p-4 bg-muted/30 rounded-xl border border-border/50">
           <div className="flex justify-between items-center">
             <span className="text-xs font-medium text-muted-foreground uppercase">
               Beats
@@ -292,7 +279,7 @@ export default function CountMeter2({ setShowCountMeter }: MetronomeProps) {
             </div>
           </div>
 
-          <Button
+          {/* <Button
             variant="secondary"
             className="w-full py-8 rounded-xl border-2 border-transparent active:border-primary/50 transition-all active:scale-[0.99]"
             onClick={handleTap}
@@ -305,8 +292,27 @@ export default function CountMeter2({ setShowCountMeter }: MetronomeProps) {
                 Tap rhythm to set tempo
               </span>
             </div>
-          </Button>
+          </Button> */}
         </div>
+        {/* Start/Stop Button */}
+        <Button
+          variant={isPlaying ? "destructive" : "glow"}
+          size="lg"
+          onClick={startStop}
+          className="w-full font-medium tracking-wide text-lg py-8 rounded-2xl shadow-lg transition-all active:scale-[0.98]"
+        >
+          {isPlaying ? (
+            <div className="flex items-center gap-2">
+              <Square className="w-5 h-5 fill-current" />
+              STOP
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <Play className="w-5 h-5 fill-current" />
+              START
+            </div>
+          )}
+        </Button>
       </div>
     </div>
   );

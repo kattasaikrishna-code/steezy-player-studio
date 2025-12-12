@@ -299,14 +299,14 @@ export const DanceVideoPlayer: React.FC<DanceVideoPlayerProps> = ({
 
         {!showCountMeter && !showSidebar && (
           <div className="absolute top-6 right-8 mr-[8rem] z-10 flex gap-2">
-            {!showCountMeter2 && (
+            {/* {!showCountMeter2 && (
               <button
                 className="px-4 py-2 bg-card/80 backdrop-blur-sm rounded-lg text-sm font-medium bg-primary/20 text-primary hover:bg-primary/30 transition-colors"
                 onClick={() => setShowCountMeter(!showCountMeter)}
               >
                 Count Meter
               </button>
-            )}
+            )} */}
             {!showCountMeter && (
               <button
                 className={cn(
@@ -337,7 +337,7 @@ export const DanceVideoPlayer: React.FC<DanceVideoPlayerProps> = ({
             src={currentSource}
             poster={poster}
             className={cn(
-              "w-full h-full object-contain",
+              "flex-1 h-[calc(100vh-6rem)] w-full object-contain",
               isMirrored && "scale-x-[-1]"
             )}
             onTimeUpdate={handleTimeUpdate}

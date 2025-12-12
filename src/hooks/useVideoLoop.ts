@@ -44,10 +44,11 @@ export const useVideoLoop = ({ videoRef, duration }: UseVideoLoopProps) => {
         return false;
       } else {
         // Currently disabled, enable with new range
-        const currentTime = videoRef.current!.currentTime;       
+        const currentTime = videoRef.current!.currentTime;
+        console.log("currentTime", currentTime);
         const endTime = Math.min(currentTime + 10, duration);
         setLoopRange({
-          start: currentTime === 0 ? 0 : currentTime - 10,
+          start: currentTime <= 10 ? 0 : currentTime - 10,
           end: endTime,
         });
         setIsSettingLoop(false);

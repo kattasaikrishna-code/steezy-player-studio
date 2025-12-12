@@ -66,7 +66,7 @@ const Index = () => {
         />
       </Helmet> */}
 
-      <div className="min-h-screen bg-background flex flex-col">
+      <div className="h-[calc(100vh-4rem)] bg-background flex flex-col">
         {/* Header */}
         {/* <header className="border-b border-border px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
