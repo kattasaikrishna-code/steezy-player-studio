@@ -1,7 +1,6 @@
 import { DanceVideoPlayer } from "@/components/player/DanceVideoPlayer";
 import { VideoSection } from "@/types/player";
 
-
 // Sample sections for demo
 const demoSections: VideoSection[] = [
   {
@@ -52,7 +51,7 @@ const demoSections: VideoSection[] = [
 const demoSources = {
   front:
     "https://cdn.plyr.io/static/demo/View_From_A_Blue_Moon_Trailer-1080p.mp4",
-  back: "https://cdn.plyr.io/static/demo/View_From_A_Blue_Moon_Trailer-1080p.mp4",
+  back: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
 };
 
 const Index = () => {

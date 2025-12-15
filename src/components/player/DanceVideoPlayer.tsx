@@ -172,48 +172,16 @@ export const DanceVideoPlayer: React.FC<DanceVideoPlayerProps> = ({
   }, []);
 
   // Handle restoring time position when video source changes
+  // Handle restoring time position when video source changes
   const handleCanPlay = useCallback(() => {
     if (pendingSeekRef.current && videoRef.current) {
-      const video = videoRef.current;
-      const { time, shouldPlay } = pendingSeekRef.current;
-
-      // Clamp target time so it's always within the new video's duration
-      const duration = isNaN(video.duration) ? undefined : video.duration;
-      const safeMaxTime = duration && duration > 0 ? duration - 0.1 : undefined; // a tiny offset from the end
-      const targetTime = safeMaxTime
-        ? Math.max(0, Math.min(time, safeMaxTime))
-        : Math.max(0, time);
-
-      // Apply the saved (clamped) time on the new source
-      video.currentTime = targetTime;
-
-      // If the previous view was playing, resume immediately
-      if (shouldPlay) {
-        const playPromise = video.play();
-        if (playPromise && typeof playPromise.then === "function") {
-          playPromise.catch((err) => {
-            console.error(
-              "Autoplay blocked or play error after view switch:",
-              err
-            );
-          });
-        }
+      videoRef.current.currentTime = pendingSeekRef.current.time;
+      if (pendingSeekRef.current.shouldPlay) {
+        videoRef.current.play();
       }
-
-      // Clear pending state and loader regardless
       pendingSeekRef.current = null;
       setIsLoading(false);
-    } else {
-      setIsLoading(false);
     }
-  }, []);
-
-  // Handle when seek operation completes (fallback)
-  const handleSeeked = useCallback(() => {
-    // Kept as a safety net in case some browsers fire seeked later
-    if (!pendingSeekRef.current) return;
-    pendingSeekRef.current = null;
-    setIsLoading(false);
   }, []);
 
   const handleSectionClick = useCallback(
@@ -361,7 +329,7 @@ export const DanceVideoPlayer: React.FC<DanceVideoPlayerProps> = ({
           </div>
         )}
 
-        {/* Video container - Fixed height */}
+        {/* Video container */}
         <div
           ref={containerRef}
           className={cn(
@@ -403,9 +371,10 @@ export const DanceVideoPlayer: React.FC<DanceVideoPlayerProps> = ({
               onTimeUpdate={handleTimeUpdate}
               onLoadedMetadata={handleLoadedMetadata}
               onCanPlay={handleCanPlay}
-              onSeeked={handleSeeked}
               onPlay={() => setIsPlaying(true)}
               onPause={() => setIsPlaying(false)}
+              onWaiting={() => setIsLoading(true)}
+              onPlaying={() => setIsLoading(false)}
               onClick={handlePlayPause}
             />
 
