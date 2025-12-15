@@ -342,8 +342,8 @@ export const DanceVideoPlayer: React.FC<DanceVideoPlayerProps> = ({
           ref={containerRef}
           className={cn(
             "relative bg-player-bg overflow-hidden flex",
-            "group", // Group hover for controls
-            "h-[calc(100vh-12rem)]" // Fixed height
+            "group",
+            "h-[calc(100vh-6rem)]"
           )}
         >
           {/* Split Screen Application */}

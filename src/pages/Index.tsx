@@ -1,6 +1,6 @@
 import { DanceVideoPlayer } from "@/components/player/DanceVideoPlayer";
 import { VideoSection } from "@/types/player";
-import { Helmet } from "react-helmet-async";
+
 
 // Sample sections for demo
 const demoSections: VideoSection[] = [
@@ -50,52 +50,15 @@ const demoSections: VideoSection[] = [
 
 // Demo video sources - Using reliable free video sources
 const demoSources = {
-  front: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
-  back: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
+  front:
+    "https://cdn.plyr.io/static/demo/View_From_A_Blue_Moon_Trailer-1080p.mp4",
+  back: "https://cdn.plyr.io/static/demo/View_From_A_Blue_Moon_Trailer-1080p.mp4",
 };
 
 const Index = () => {
   return (
     <>
-      {/* <Helmet>
-        <title>Dance Studio | Learn Dance Online</title>
-        <meta
-          name="description"
-          content="Learn dance with our interactive video player featuring loop sections, mirror mode, and camera preview."
-        />
-      </Helmet> */}
-
       <div className="h-[calc(100vh-4rem)] bg-background flex flex-col">
-        {/* Header */}
-        {/* <header className="border-b border-border px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <h1 className="font-display text-3xl tracking-wider text-foreground">
-              DANCE<span className="text-primary">STUDIO</span>
-            </h1>
-          </div>
-
-          <nav className="flex items-center gap-6">
-            <a
-              href="#"
-              className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Classes
-            </a>
-            <a
-              href="#"
-              className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Programs
-            </a>
-            <a
-              href="#"
-              className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-            >
-              My Progress
-            </a>
-          </nav>
-        </header> */}
-
         {/* Main content */}
         <main className="flex-1">
           <DanceVideoPlayer
