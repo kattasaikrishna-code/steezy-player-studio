@@ -174,22 +174,34 @@ export const DanceVideoPlayer: React.FC<DanceVideoPlayerProps> = ({
   // Handle restoring time position when video source changes
   const handleCanPlay = useCallback(() => {
     if (pendingSeekRef.current && videoRef.current) {
-      // Keep loading true - will be set to false after seek completes
-      videoRef.current.currentTime = pendingSeekRef.current.time;
+      const { time, shouldPlay } = pendingSeekRef.current;
+      // Apply the saved time on the new source
+      videoRef.current.currentTime = time;
+
+      // If the previous view was playing, resume immediately
+      if (shouldPlay) {
+        const playPromise = videoRef.current.play();
+        if (playPromise && typeof playPromise.then === "function") {
+          playPromise.catch((err) => {
+            console.error("Autoplay blocked or play error after view switch:", err);
+          });
+        }
+      }
+
+      // Clear pending state and loader regardless
+      pendingSeekRef.current = null;
+      setIsLoading(false);
     } else {
       setIsLoading(false);
     }
   }, []);
 
-  // Handle when seek operation completes
+  // Handle when seek operation completes (fallback)
   const handleSeeked = useCallback(() => {
-    if (pendingSeekRef.current && videoRef.current) {
-      if (pendingSeekRef.current.shouldPlay) {
-        videoRef.current.play();
-      }
-      pendingSeekRef.current = null;
-      setIsLoading(false);
-    }
+    // Kept as a safety net in case some browsers fire seeked later
+    if (!pendingSeekRef.current) return;
+    pendingSeekRef.current = null;
+    setIsLoading(false);
   }, []);
 
   const handleSectionClick = useCallback(
