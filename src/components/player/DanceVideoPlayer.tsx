@@ -406,8 +406,6 @@ export const DanceVideoPlayer: React.FC<DanceVideoPlayerProps> = ({
               onSeeked={handleSeeked}
               onPlay={() => setIsPlaying(true)}
               onPause={() => setIsPlaying(false)}
-              onWaiting={() => setIsLoading(true)}
-              onPlaying={() => setIsLoading(false)}
               onClick={handlePlayPause}
             />
 
