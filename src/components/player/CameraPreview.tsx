@@ -1,28 +1,37 @@
-import React, { useCallback } from 'react';
-import { X, Move } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
+import React, { useCallback } from "react";
+import { X, Move } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 interface CameraPreviewProps {
   isMirrored: boolean;
   onClose: () => void;
   onVideoRef: (element: HTMLVideoElement | null) => void;
+  mode?: "overlay" | "split";
 }
 
-export const CameraPreview: React.FC<CameraPreviewProps> = ({ isMirrored, onClose, onVideoRef }) => {
-  const videoRefCallback = useCallback((element: HTMLVideoElement | null) => {
-    if (element) {
-      onVideoRef(element);
-    }
-  }, [onVideoRef]);
+export const CameraPreview: React.FC<CameraPreviewProps> = ({
+  isMirrored,
+  onClose,
+  onVideoRef,
+  mode = "overlay",
+}) => {
+  const videoRefCallback = useCallback(
+    (element: HTMLVideoElement | null) => {
+      if (element) {
+        onVideoRef(element);
+      }
+    },
+    [onVideoRef]
+  );
 
   return (
-    <div 
+    <div
       className={cn(
-        "absolute bottom-24 right-4 w-48 h-36 rounded-xl overflow-hidden",
-        "border-2 border-accent shadow-lg z-30",
-        "bg-black animate-fade-in",
-        "group cursor-move"
+        "overflow-hidden bg-black animate-fade-in group",
+        mode === "overlay" &&
+          "absolute bottom-24 right-4 w-48 h-36 rounded-xl border-2 border-accent shadow-lg z-30 cursor-move",
+        mode === "split" && "w-full h-full border-r border-border relative"
       )}
     >
       {/* Header */}
@@ -53,10 +62,12 @@ export const CameraPreview: React.FC<CameraPreviewProps> = ({ isMirrored, onClos
         )}
       />
 
-      {/* Drag handle indicator */}
-      <div className="absolute bottom-2 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
-        <Move className="w-4 h-4 text-white/60" />
-      </div>
+      {/* Drag handle indicator (only in overlay) */}
+      {mode === "overlay" && (
+        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
+          <Move className="w-4 h-4 text-white/60" />
+        </div>
+      )}
     </div>
   );
 };

@@ -10,19 +10,15 @@ interface MetronomeProps {
 
 export default function CountMeter2({ setShowCountMeter }: MetronomeProps) {
   const [isPlaying, setIsPlaying] = useState(false);
-  const [bpm, setBpm] = useState(120);
+  const [bpm, setBpm] = useState(100);
 
-  const [beatsPerMeasure, setBeatsPerMeasure] = useState(8);
+  const [beatsPerMeasure, setBeatsPerMeasure] = useState(6);
   const bpmRef = useRef(bpm);
   const [count, setCount] = useState(0);
   const [stressFirstBeat, setStressFirstBeat] = useState(true);
 
-  // Audio Refs (matching CountMeter.tsx)
-  const click1 = "//daveceddia.com/freebies/react-metronome/click1.wav";
-  const click2 = "//daveceddia.com/freebies/react-metronome/click2.wav";
-
-  const click1Ref = useRef(new Audio(click1));
-  const click2Ref = useRef(new Audio(click2));
+  // Audio Context Ref
+  const audioContextRef = useRef<AudioContext | null>(null);
 
   // Timer Refs
   const timerIDRef = useRef<number | null>(null);
@@ -32,30 +28,92 @@ export default function CountMeter2({ setShowCountMeter }: MetronomeProps) {
   const currentBeatIndexRef = useRef(0);
 
   // Logic Ref
-  const playClickRef = useRef((time: number, beatCount: number) => {}); // Initialize with a dummy function
+  const playClickRef = useRef((time: number, beatCount: number) => {});
 
   // Tap Tempo Refs
   const tapTimesRef = useRef<number[]>([]);
 
-  // Initialize (AudioContext not strictly needed for new Audio(), but we keep scheduler structure)
+  // Noise Buffer Ref
+  const noiseBufferRef = useRef<AudioBuffer | null>(null);
+
+  // Initialize AudioContext and Noise Buffer
   useEffect(() => {
+    const AudioContextClass =
+      window.AudioContext || (window as any).webkitAudioContext;
+    if (AudioContextClass) {
+      const ctx = new AudioContextClass();
+      audioContextRef.current = ctx;
+
+      // Create Noise Buffer for Snare/Hi-hat
+      const bufferSize = ctx.sampleRate * 2; // 2 seconds
+      const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        data[i] = Math.random() * 2 - 1;
+      }
+      noiseBufferRef.current = buffer;
+    }
     return () => {
-      if (timerIDRef.current) window.clearTimeout(timerIDRef.current);
+      audioContextRef.current?.close();
     };
   }, []);
 
-  // Sound Generation using HTML5 Audio (Exact match to CountMeter)
+  // Sound Generation using AudioContext (Louder and adjustable tune)
+  // Sound Generation using AudioContext (Dance Beat: Snare/Rimshot + Violin Layer)
   const playClick = (time: number, beatCount: number) => {
-    // We ignore 'time' for scheduling because HTML5 Audio plays 'now'.
-    // The scheduler handles the 'when' via setTimeout/lookahead.
+    if (!audioContextRef.current || !noiseBufferRef.current) return;
+    const ctx = audioContextRef.current;
+    const t = ctx.currentTime;
+
+    // --- Tak Sound Components ---
+
+    // 1. Noise Click (The "T" consonant)
+    const noise = ctx.createBufferSource();
+    noise.buffer = noiseBufferRef.current;
+    const noiseFilter = ctx.createBiquadFilter();
+    const noiseGain = ctx.createGain();
+
+    noiseFilter.type = "highpass";
+    noiseFilter.frequency.value = 3000; // Very high HPF for sharp click
+    noise.connect(noiseFilter);
+    noiseFilter.connect(noiseGain);
+    noiseGain.connect(ctx.destination);
+
+    // 2. Tonal Knock (The "ak" vowel)
+    const osc = ctx.createOscillator();
+    const oscGain = ctx.createGain();
+    osc.connect(oscGain);
+    oscGain.connect(ctx.destination);
 
     if (beatCount % beatsPerMeasure === 0 && stressFirstBeat) {
-      click2Ref.current.currentTime = 0;
-      click2Ref.current.play().catch((e) => console.error(e));
+      // Accent: MUCH Louder, Higher pitch "TAK"
+      noiseGain.gain.setValueAtTime(1.0, t);
+      noiseGain.gain.exponentialRampToValueAtTime(0.01, t + 0.05);
+
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(2500, t); // High pitch "Ping"
+      osc.frequency.exponentialRampToValueAtTime(100, t + 0.1);
+
+      oscGain.gain.setValueAtTime(1.0, t); // Max volume
+      oscGain.gain.exponentialRampToValueAtTime(0.01, t + 0.1);
     } else {
-      click1Ref.current.currentTime = 0;
-      click1Ref.current.play().catch((e) => console.error(e));
+      // Beat: Softer, Lower pitch "tuk"
+      noiseGain.gain.setValueAtTime(1.0, t); // Very Quiet noise
+      noiseGain.gain.exponentialRampToValueAtTime(0.01, t + 0.05);
+
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(1500, t); // Medium pitch
+      osc.frequency.exponentialRampToValueAtTime(100, t + 0.1);
+
+      oscGain.gain.setValueAtTime(1.0, t); // Quiet body
+      oscGain.gain.exponentialRampToValueAtTime(0.01, t + 0.1);
     }
+
+    // Start
+    noise.start(t);
+    noise.stop(t + 0.1);
+    osc.start(t);
+    osc.stop(t + 0.1);
 
     // UI Update
     setCount(beatCount % beatsPerMeasure);
@@ -89,6 +147,10 @@ export default function CountMeter2({ setShowCountMeter }: MetronomeProps) {
   };
 
   const startStop = () => {
+    if (audioContextRef.current?.state === "suspended") {
+      audioContextRef.current.resume();
+    }
+
     if (isPlaying) {
       if (timerIDRef.current) window.clearTimeout(timerIDRef.current);
       setIsPlaying(false);

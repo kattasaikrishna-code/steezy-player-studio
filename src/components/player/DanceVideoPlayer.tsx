@@ -1,4 +1,5 @@
 import React, { useRef, useState, useCallback, useEffect } from "react";
+import { Loader2 } from "lucide-react";
 import ReactAllPlayer from "react-all-player";
 import { VideoSection, ViewMode, LoopRange } from "@/types/player";
 import { Timeline } from "./Timeline";
@@ -32,6 +33,7 @@ export const DanceVideoPlayer: React.FC<DanceVideoPlayerProps> = ({
   );
 
   // Player state
+  const [isLoading, setIsLoading] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -46,6 +48,9 @@ export const DanceVideoPlayer: React.FC<DanceVideoPlayerProps> = ({
   const [showCountMeter, setShowCountMeter] = useState(false);
   const [showCountMeter2, setShowCountMeter2] = useState(false);
   const [controlsVisible, setControlsVisible] = useState(true);
+
+  // Derived source info
+  const currentSource = sources[viewMode];
 
   // Camera hook
   const { isCameraOn, toggleCamera, cameraError, attachStreamToVideo } =
@@ -162,11 +167,14 @@ export const DanceVideoPlayer: React.FC<DanceVideoPlayerProps> = ({
     };
 
     setViewMode(mode);
+    setIsLoading(true);
     toast.success(`Switched to ${mode} view`);
   }, []);
 
   // Handle restoring time position when video source changes
+  // Handle restoring time position when video source changes
   const handleCanPlay = useCallback(() => {
+    setIsLoading(false);
     if (pendingSeekRef.current && videoRef.current) {
       videoRef.current.currentTime = pendingSeekRef.current.time;
       if (pendingSeekRef.current.shouldPlay) {
@@ -276,8 +284,6 @@ export const DanceVideoPlayer: React.FC<DanceVideoPlayerProps> = ({
     };
   }, [isPlaying]);
 
-  const currentSource = viewMode === "front" ? sources.front : sources.back;
-
   return (
     <div className="flex h-full bg-background">
       {/* Main player area */}
@@ -327,95 +333,117 @@ export const DanceVideoPlayer: React.FC<DanceVideoPlayerProps> = ({
         <div
           ref={containerRef}
           className={cn(
-            "relative flex-1 bg-player-bg overflow-hidden",
-            "group"
+            "relative flex-1 bg-player-bg overflow-hidden flex",
+            "group" // Group hover for controls
           )}
         >
-          {/* Video element */}
-          <video
-            ref={videoRef}
-            src={currentSource}
-            poster={poster}
-            className={cn(
-              "flex-1 h-[calc(100vh-6rem)] w-full object-contain",
-              isMirrored && "scale-x-[-1]"
-            )}
-            onTimeUpdate={handleTimeUpdate}
-            onLoadedMetadata={handleLoadedMetadata}
-            onCanPlay={handleCanPlay}
-            onPlay={() => setIsPlaying(true)}
-            onPause={() => setIsPlaying(false)}
-            onClick={handlePlayPause}
-          />
+          {/* Split Screen Application */}
 
-          {/* Camera preview */}
+          {/* LEFT SIDE: CAMERA (If On) */}
           {isCameraOn && (
-            <CameraPreview
-              isMirrored={isMirrored}
-              onClose={handleCameraToggle}
-              onVideoRef={attachStreamToVideo}
-            />
-          )}
-
-          {/* View mode indicator */}
-          <div className="absolute top-4 left-4 px-3 py-1.5 bg-card/80 backdrop-blur-sm rounded-lg text-sm font-medium">
-            {viewMode.toUpperCase()} VIEW
-          </div>
-
-          {/* Loop indicator */}
-          {loopEnabled && (
-            <div className="absolute top-4 right-4 px-3 py-1.5 bg-primary/80 backdrop-blur-sm rounded-lg text-sm font-medium text-primary-foreground flex items-center gap-2">
-              <span className="w-2 h-2 bg-primary-foreground rounded-full animate-pulse" />
-              LOOP
+            <div className="w-1/2 h-full bg-black border-r border-border/20 z-10 transition-all duration-300 ease-in-out">
+              <CameraPreview
+                isMirrored={isMirrored}
+                onClose={handleCameraToggle}
+                onVideoRef={attachStreamToVideo}
+                mode="split"
+              />
             </div>
           )}
 
-          {/* Controls overlay */}
+          {/* RIGHT SIDE (or Full): VIDEO PLAYER */}
           <div
             className={cn(
-              "absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent",
-              "p-4 transition-opacity duration-300",
-              controlsVisible ? "opacity-100" : "opacity-0"
+              "relative h-full transition-all duration-300 ease-in-out",
+              isCameraOn ? "w-1/2" : "w-full"
             )}
           >
-            {/* Timeline */}
-            <Timeline
-              currentTime={currentTime}
-              duration={duration}
-              loopRange={loopRange}
-              loopEnabled={loopEnabled}
-              sections={sections}
-              onSeek={handleSeek}
-              onLoopRangeChange={handleLoopRangeChange}
+            {/* Video element */}
+            <video
+              ref={videoRef}
+              src={currentSource}
+              poster={poster}
+              className={cn(
+                "w-full h-full object-contain",
+                isMirrored && "scale-x-[-1]"
+              )}
+              onTimeUpdate={handleTimeUpdate}
+              onLoadedMetadata={handleLoadedMetadata}
+              onCanPlay={handleCanPlay}
+              onPlay={() => setIsPlaying(true)}
+              onPause={() => setIsPlaying(false)}
+              onWaiting={() => setIsLoading(true)}
+              onPlaying={() => setIsLoading(false)}
+              onClick={handlePlayPause}
             />
 
-            {/* Control buttons */}
-            <VideoControls
-              isPlaying={isPlaying}
-              isMuted={isMuted}
-              volume={volume}
-              isFullscreen={isFullscreen}
-              isMirrored={isMirrored}
-              isCameraOn={isCameraOn}
-              viewMode={viewMode}
-              loopEnabled={loopEnabled}
-              isSettingLoop={isSettingLoop}
-              playbackRate={playbackRate}
-              currentTime={currentTime}
-              duration={duration}
-              onPlayPause={handlePlayPause}
-              onMuteToggle={handleMuteToggle}
-              onVolumeChange={handleVolumeChange}
-              onFullscreenToggle={handleFullscreenToggle}
-              onMirrorToggle={handleMirrorToggle}
-              onCameraToggle={handleCameraToggle}
-              onViewModeChange={handleViewModeChange}
-              onLoopToggle={toggleLoop}
-              onClearLoop={clearLoop}
-              onSetLoopPoint={setLoopFromCurrentTime}
-              onPlaybackRateChange={handlePlaybackRateChange}
-              onSeekRelative={handleSeekRelative}
-            />
+            {/* Loading Overlay */}
+            {isLoading && (
+              <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm pointer-events-none">
+                <Loader2 className="w-10 h-10 text-primary animate-spin" />
+              </div>
+            )}
+
+            {/* View mode indicator */}
+            <div className="absolute top-4 left-4 px-3 py-1.5 bg-card/80 backdrop-blur-sm rounded-lg text-sm font-medium z-20">
+              {viewMode.toUpperCase()} VIEW
+            </div>
+
+            {/* Loop indicator */}
+            {loopEnabled && (
+              <div className="absolute top-4 right-4 px-3 py-1.5 bg-primary/80 backdrop-blur-sm rounded-lg text-sm font-medium text-primary-foreground flex items-center gap-2 z-20">
+                <span className="w-2 h-2 bg-primary-foreground rounded-full animate-pulse" />
+                LOOP
+              </div>
+            )}
+
+            {/* Controls overlay */}
+            <div
+              className={cn(
+                "absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent",
+                "p-4 transition-opacity duration-300 z-30",
+                controlsVisible ? "opacity-100" : "opacity-0"
+              )}
+            >
+              {/* Timeline */}
+              <Timeline
+                currentTime={currentTime}
+                duration={duration}
+                loopRange={loopRange}
+                loopEnabled={loopEnabled}
+                sections={sections}
+                onSeek={handleSeek}
+                onLoopRangeChange={handleLoopRangeChange}
+              />
+
+              {/* Control buttons */}
+              <VideoControls
+                isPlaying={isPlaying}
+                isMuted={isMuted}
+                volume={volume}
+                isFullscreen={isFullscreen}
+                isMirrored={isMirrored}
+                isCameraOn={isCameraOn}
+                viewMode={viewMode}
+                loopEnabled={loopEnabled}
+                isSettingLoop={isSettingLoop}
+                playbackRate={playbackRate}
+                currentTime={currentTime}
+                duration={duration}
+                onPlayPause={handlePlayPause}
+                onMuteToggle={handleMuteToggle}
+                onVolumeChange={handleVolumeChange}
+                onFullscreenToggle={handleFullscreenToggle}
+                onMirrorToggle={handleMirrorToggle}
+                onCameraToggle={handleCameraToggle}
+                onViewModeChange={handleViewModeChange}
+                onLoopToggle={toggleLoop}
+                onClearLoop={clearLoop}
+                onSetLoopPoint={setLoopFromCurrentTime}
+                onPlaybackRateChange={handlePlaybackRateChange}
+                onSeekRelative={handleSeekRelative}
+              />
+            </div>
           </div>
         </div>
       </div>
