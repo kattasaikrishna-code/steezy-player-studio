@@ -48,11 +48,10 @@ const demoSections: VideoSection[] = [
   },
 ];
 
-// Demo video sources (using same video for both views to ensure matching duration)
+// Demo video sources - Using Pexels free dance videos
 const demoSources = {
-  front:
-    "https://cdn.plyr.io/static/demo/View_From_A_Blue_Moon_Trailer-1080p.mp4",
-  back: "https://cdn.plyr.io/static/demo/View_From_A_Blue_Moon_Trailer-576p.mp4",
+  front: "https://videos.pexels.com/video-files/8688463/8688463-hd_1920_1080_25fps.mp4",
+  back: "https://videos.pexels.com/video-files/8688465/8688465-hd_1920_1080_25fps.mp4",
 };
 
 const Index = () => {
