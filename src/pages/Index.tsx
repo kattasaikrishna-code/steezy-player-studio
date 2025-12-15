@@ -50,8 +50,8 @@ const demoSections: VideoSection[] = [
 
 // Demo video sources - Using Pexels free dance videos
 const demoSources = {
-  front: "https://videos.pexels.com/video-files/8688463/8688463-hd_1920_1080_25fps.mp4",
-  back: "https://videos.pexels.com/video-files/8688465/8688465-hd_1920_1080_25fps.mp4",
+  front: "https://videos.pexels.com/video-files/4536611/4536611-hd_1920_1080_25fps.mp4",
+  back: "https://videos.pexels.com/video-files/4536573/4536573-hd_1920_1080_25fps.mp4",
 };
 
 const Index = () => {
