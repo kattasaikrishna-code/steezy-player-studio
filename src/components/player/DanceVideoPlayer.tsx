@@ -337,12 +337,13 @@ export const DanceVideoPlayer: React.FC<DanceVideoPlayerProps> = ({
           </div>
         )}
 
-        {/* Video container */}
+        {/* Video container - Fixed height */}
         <div
           ref={containerRef}
           className={cn(
-            "relative flex-1 bg-player-bg overflow-hidden flex",
-            "group" // Group hover for controls
+            "relative bg-player-bg overflow-hidden flex",
+            "group", // Group hover for controls
+            "h-[calc(100vh-12rem)]" // Fixed height
           )}
         >
           {/* Split Screen Application */}
