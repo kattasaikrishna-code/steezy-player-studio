@@ -48,7 +48,7 @@ const demoSections: VideoSection[] = [
   },
 ];
 
-// Demo video sources - Using reliable free video sources
+// Demo video sources - Using longer sample videos (~3-4 minutes)
 const demoSources = {
   front:
     "https://cdn.plyr.io/static/demo/View_From_A_Blue_Moon_Trailer-1080p.mp4",
