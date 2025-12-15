@@ -172,15 +172,23 @@ export const DanceVideoPlayer: React.FC<DanceVideoPlayerProps> = ({
   }, []);
 
   // Handle restoring time position when video source changes
-  // Handle restoring time position when video source changes
   const handleCanPlay = useCallback(() => {
-    setIsLoading(false);
     if (pendingSeekRef.current && videoRef.current) {
+      // Keep loading true - will be set to false after seek completes
       videoRef.current.currentTime = pendingSeekRef.current.time;
+    } else {
+      setIsLoading(false);
+    }
+  }, []);
+
+  // Handle when seek operation completes
+  const handleSeeked = useCallback(() => {
+    if (pendingSeekRef.current && videoRef.current) {
       if (pendingSeekRef.current.shouldPlay) {
         videoRef.current.play();
       }
       pendingSeekRef.current = null;
+      setIsLoading(false);
     }
   }, []);
 
@@ -370,6 +378,7 @@ export const DanceVideoPlayer: React.FC<DanceVideoPlayerProps> = ({
               onTimeUpdate={handleTimeUpdate}
               onLoadedMetadata={handleLoadedMetadata}
               onCanPlay={handleCanPlay}
+              onSeeked={handleSeeked}
               onPlay={() => setIsPlaying(true)}
               onPause={() => setIsPlaying(false)}
               onWaiting={() => setIsLoading(true)}
