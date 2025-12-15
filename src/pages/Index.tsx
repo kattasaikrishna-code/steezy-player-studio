@@ -48,10 +48,10 @@ const demoSections: VideoSection[] = [
   },
 ];
 
-// Demo video sources - Using Pexels free dance videos
+// Demo video sources - Using reliable free video sources
 const demoSources = {
-  front: "https://videos.pexels.com/video-files/4536611/4536611-hd_1920_1080_25fps.mp4",
-  back: "https://videos.pexels.com/video-files/4536573/4536573-hd_1920_1080_25fps.mp4",
+  front: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+  back: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
 };
 
 const Index = () => {
