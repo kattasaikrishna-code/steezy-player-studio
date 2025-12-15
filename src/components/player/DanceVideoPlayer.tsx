@@ -379,8 +379,8 @@ export const DanceVideoPlayer: React.FC<DanceVideoPlayerProps> = ({
 
             {/* Loading Overlay */}
             {isLoading && (
-              <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm pointer-events-none">
-                <Loader2 className="w-10 h-10 text-primary animate-spin" />
+              <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 pointer-events-none">
+                <Loader2 className="w-24 h-24 text-gray-400 animate-spin" />
               </div>
             )}
 
