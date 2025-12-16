@@ -1,6 +1,5 @@
 import React, { useRef, useState, useCallback, useEffect } from "react";
 import { Loader2 } from "lucide-react";
-import ReactAllPlayer from "react-all-player";
 import { VideoSection, ViewMode, LoopRange } from "@/types/player";
 import { Timeline } from "./Timeline";
 import { VideoControls } from "./VideoControls";
@@ -26,13 +25,12 @@ export const DanceVideoPlayer: React.FC<DanceVideoPlayerProps> = ({
   poster,
   title,
 }) => {
-  const videoRef = useRef<HTMLVideoElement>(null);
+  // 1. Refs
+  const videoRefFront = useRef<HTMLVideoElement>(null);
+  const videoRefBack = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const pendingSeekRef = useRef<{ time: number; shouldPlay: boolean } | null>(
-    null
-  );
 
-  // Player state
+  // 2. State
   const [isLoading, setIsLoading] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -49,14 +47,12 @@ export const DanceVideoPlayer: React.FC<DanceVideoPlayerProps> = ({
   const [showCountMeter2, setShowCountMeter2] = useState(false);
   const [controlsVisible, setControlsVisible] = useState(true);
 
-  // Derived source info
-  const currentSource = sources[viewMode];
+  // 3. Derived
+  const videoRef = viewMode === "front" ? videoRefFront : videoRefBack;
 
-  // Camera hook
+  // 4. Hooks
   const { isCameraOn, toggleCamera, cameraError, attachStreamToVideo } =
     useCamera();
-
-  // Loop hook
   const {
     loopEnabled,
     loopRange,
@@ -68,18 +64,18 @@ export const DanceVideoPlayer: React.FC<DanceVideoPlayerProps> = ({
     setLoopEnabled,
   } = useVideoLoop({ videoRef, duration });
 
-  // Handle video events
+  // 5. Handlers
   const handleTimeUpdate = useCallback(() => {
     if (videoRef.current) {
       setCurrentTime(videoRef.current.currentTime);
     }
-  }, []);
+  }, [videoRef]);
 
   const handleLoadedMetadata = useCallback(() => {
     if (videoRef.current) {
       setDuration(videoRef.current.duration);
     }
-  }, []);
+  }, [videoRef]);
 
   const handlePlayPause = useCallback(() => {
     if (videoRef.current) {
@@ -90,14 +86,17 @@ export const DanceVideoPlayer: React.FC<DanceVideoPlayerProps> = ({
       }
       setIsPlaying(!isPlaying);
     }
-  }, [isPlaying]);
+  }, [videoRef, isPlaying]);
 
-  const handleSeek = useCallback((time: number) => {
-    if (videoRef.current) {
-      videoRef.current.currentTime = time;
-      setCurrentTime(time);
-    }
-  }, []);
+  const handleSeek = useCallback(
+    (time: number) => {
+      if (videoRef.current) {
+        videoRef.current.currentTime = time;
+        setCurrentTime(time);
+      }
+    },
+    [videoRef]
+  );
 
   const handleSeekRelative = useCallback(
     (seconds: number) => {
@@ -110,30 +109,28 @@ export const DanceVideoPlayer: React.FC<DanceVideoPlayerProps> = ({
         setCurrentTime(newTime);
       }
     },
-    [duration]
+    [duration, videoRef]
   );
 
   const handleVolumeChange = useCallback((value: number) => {
-    if (videoRef.current) {
-      videoRef.current.volume = value;
-      setVolume(value);
-      setIsMuted(value === 0);
-    }
+    if (videoRefFront.current) videoRefFront.current.volume = value;
+    if (videoRefBack.current) videoRefBack.current.volume = value;
+    setVolume(value);
+    setIsMuted(value === 0);
   }, []);
 
   const handleMuteToggle = useCallback(() => {
-    if (videoRef.current) {
-      videoRef.current.muted = !isMuted;
-      setIsMuted(!isMuted);
-    }
+    const newMuted = !isMuted;
+    if (videoRefFront.current) videoRefFront.current.muted = newMuted;
+    if (videoRefBack.current) videoRefBack.current.muted = newMuted;
+    setIsMuted(newMuted);
   }, [isMuted]);
 
   const handlePlaybackRateChange = useCallback((rate: number) => {
-    if (videoRef.current) {
-      videoRef.current.playbackRate = rate;
-      setPlaybackRate(rate);
-      toast.success(`Playback speed: ${rate}x`);
-    }
+    if (videoRefFront.current) videoRefFront.current.playbackRate = rate;
+    if (videoRefBack.current) videoRefBack.current.playbackRate = rate;
+    setPlaybackRate(rate);
+    toast.success(`Playback speed: ${rate}x`);
   }, []);
 
   const handleFullscreenToggle = useCallback(async () => {
@@ -157,32 +154,38 @@ export const DanceVideoPlayer: React.FC<DanceVideoPlayerProps> = ({
     toast.success(isMirrored ? "Mirror mode off" : "Mirror mode on");
   }, [isMirrored]);
 
-  const handleViewModeChange = useCallback((mode: ViewMode) => {
-    if (!videoRef.current) return;
+  const handleViewModeChange = useCallback(
+    (mode: ViewMode) => {
+      const currentVideo = videoRef.current;
+      const nextVideo =
+        mode === "front" ? videoRefFront.current : videoRefBack.current;
 
-    // Store the current time and playing state to restore after source change
-    pendingSeekRef.current = {
-      time: videoRef.current.currentTime,
-      shouldPlay: !videoRef.current.paused,
-    };
+      if (currentVideo && nextVideo) {
+        // Sync State
+        const currentTime = currentVideo.currentTime;
+        const shouldPlay = !currentVideo.paused;
 
-    setViewMode(mode);
-    setIsLoading(true);
-    toast.success(`Switched to ${mode} view`);
-  }, []);
+        // Apply to next video
+        nextVideo.currentTime = currentTime;
+        nextVideo.playbackRate = playbackRate;
+        nextVideo.volume = volume;
+        nextVideo.muted = isMuted;
 
-  // Handle restoring time position when video source changes
-  // Handle restoring time position when video source changes
-  const handleCanPlay = useCallback(() => {
-    if (pendingSeekRef.current && videoRef.current) {
-      videoRef.current.currentTime = pendingSeekRef.current.time;
-      if (pendingSeekRef.current.shouldPlay) {
-        videoRef.current.play();
+        if (shouldPlay) {
+          currentVideo.pause();
+          nextVideo.play().catch(console.error);
+        } else {
+          currentVideo.pause();
+          nextVideo.pause();
+        }
       }
-      pendingSeekRef.current = null;
+
+      setViewMode(mode);
       setIsLoading(false);
-    }
-  }, []);
+      toast.success(`Switched to ${mode} view`);
+    },
+    [videoRef, playbackRate, volume, isMuted]
+  );
 
   const handleSectionClick = useCallback(
     (section: VideoSection) => {
@@ -216,7 +219,12 @@ export const DanceVideoPlayer: React.FC<DanceVideoPlayerProps> = ({
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLInputElement) return;
+      // Ignore if typing in an input
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement
+      )
+        return;
 
       switch (e.key.toLowerCase()) {
         case " ":
@@ -305,14 +313,6 @@ export const DanceVideoPlayer: React.FC<DanceVideoPlayerProps> = ({
 
         {!showCountMeter && !showSidebar && (
           <div className="absolute top-6 right-8 mr-[8rem] z-10 flex gap-2">
-            {/* {!showCountMeter2 && (
-              <button
-                className="px-4 py-2 bg-card/80 backdrop-blur-sm rounded-lg text-sm font-medium bg-primary/20 text-primary hover:bg-primary/30 transition-colors"
-                onClick={() => setShowCountMeter(!showCountMeter)}
-              >
-                Count Meter
-              </button>
-            )} */}
             {!showCountMeter && (
               <button
                 className={cn(
@@ -359,22 +359,75 @@ export const DanceVideoPlayer: React.FC<DanceVideoPlayerProps> = ({
               isCameraOn ? "w-1/2" : "w-full"
             )}
           >
-            {/* Video element */}
+            {/* Front Video */}
             <video
-              ref={videoRef}
-              src={currentSource}
+              ref={videoRefFront}
+              src={sources.front}
               poster={poster}
               className={cn(
-                "w-full h-full object-contain",
-                isMirrored && "scale-x-[-1]"
+                "w-full h-full object-contain absolute inset-0 transition-opacity duration-300",
+                isMirrored && "scale-x-[-1]",
+                viewMode === "front"
+                  ? "opacity-100 z-10"
+                  : "opacity-0 z-0 pointer-events-none"
               )}
-              onTimeUpdate={handleTimeUpdate}
-              onLoadedMetadata={handleLoadedMetadata}
-              onCanPlay={handleCanPlay}
-              onPlay={() => setIsPlaying(true)}
-              onPause={() => setIsPlaying(false)}
-              onWaiting={() => setIsLoading(true)}
-              onPlaying={() => setIsLoading(false)}
+              onTimeUpdate={(e) => {
+                if (viewMode === "front") handleTimeUpdate();
+              }}
+              onLoadedMetadata={(e) => {
+                if (viewMode === "front") handleLoadedMetadata();
+              }}
+              onCanPlay={(e) => {
+                // If it's the active video, we might want to ensure loading state clears
+                // But generally we handle seamless switching manually in switch handler.
+                // We'll keep default events mostly for the initial load and standard tracking.
+              }}
+              onPlay={() => {
+                if (viewMode === "front") setIsPlaying(true);
+              }}
+              onPause={() => {
+                if (viewMode === "front") setIsPlaying(false);
+              }}
+              onWaiting={() => {
+                if (viewMode === "front") setIsLoading(true);
+              }}
+              onPlaying={() => {
+                if (viewMode === "front") setIsLoading(false);
+              }}
+              onClick={handlePlayPause}
+            />
+
+            {/* Back Video */}
+            <video
+              ref={videoRefBack}
+              src={sources.back}
+              // No poster for back to avoid flash? Or same poster?
+              // Usually backup video doesn't need poster if hidden initially
+              className={cn(
+                "w-full h-full object-contain absolute inset-0 transition-opacity duration-300",
+                isMirrored && "scale-x-[-1]",
+                viewMode === "back"
+                  ? "opacity-100 z-10"
+                  : "opacity-0 z-0 pointer-events-none"
+              )}
+              onTimeUpdate={(e) => {
+                if (viewMode === "back") handleTimeUpdate();
+              }}
+              onLoadedMetadata={(e) => {
+                if (viewMode === "back") handleLoadedMetadata();
+              }}
+              onPlay={() => {
+                if (viewMode === "back") setIsPlaying(true);
+              }}
+              onPause={() => {
+                if (viewMode === "back") setIsPlaying(false);
+              }}
+              onWaiting={() => {
+                if (viewMode === "back") setIsLoading(true);
+              }}
+              onPlaying={() => {
+                if (viewMode === "back") setIsLoading(false);
+              }}
               onClick={handlePlayPause}
             />
 
