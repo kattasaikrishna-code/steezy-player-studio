@@ -12,13 +12,17 @@ export default function CountMeter2({ setShowCountMeter }: MetronomeProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [bpm, setBpm] = useState(100);
 
-  const [beatsPerMeasure, setBeatsPerMeasure] = useState(6);
+  const [beatsPerMeasure, setBeatsPerMeasure] = useState(4);
   const bpmRef = useRef(bpm);
   const [count, setCount] = useState(0);
   const [stressFirstBeat, setStressFirstBeat] = useState(true);
 
-  // Audio Context Ref
-  const audioContextRef = useRef<AudioContext | null>(null);
+  // Audio Refs (matching CountMeter.tsx)
+  const click1 = "//daveceddia.com/freebies/react-metronome/click1.wav";
+  const click2 = "//daveceddia.com/freebies/react-metronome/click2.wav";
+
+  const click1Ref = useRef(new Audio(click1));
+  const click2Ref = useRef(new Audio(click2));
 
   // Timer Refs
   const timerIDRef = useRef<number | null>(null);
@@ -33,87 +37,18 @@ export default function CountMeter2({ setShowCountMeter }: MetronomeProps) {
   // Tap Tempo Refs
   const tapTimesRef = useRef<number[]>([]);
 
-  // Noise Buffer Ref
-  const noiseBufferRef = useRef<AudioBuffer | null>(null);
-
-  // Initialize AudioContext and Noise Buffer
-  useEffect(() => {
-    const AudioContextClass =
-      window.AudioContext || (window as any).webkitAudioContext;
-    if (AudioContextClass) {
-      const ctx = new AudioContextClass();
-      audioContextRef.current = ctx;
-
-      // Create Noise Buffer for Snare/Hi-hat
-      const bufferSize = ctx.sampleRate * 2; // 2 seconds
-      const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-      const data = buffer.getChannelData(0);
-      for (let i = 0; i < bufferSize; i++) {
-        data[i] = Math.random() * 2 - 1;
-      }
-      noiseBufferRef.current = buffer;
-    }
-    return () => {
-      audioContextRef.current?.close();
-    };
-  }, []);
-
-  // Sound Generation using AudioContext (Louder and adjustable tune)
-  // Sound Generation using AudioContext (Dance Beat: Snare/Rimshot + Violin Layer)
+  // Sound Generation using HTML5 Audio (Exact match to CountMeter)
   const playClick = (time: number, beatCount: number) => {
-    if (!audioContextRef.current || !noiseBufferRef.current) return;
-    const ctx = audioContextRef.current;
-    const t = ctx.currentTime;
-
-    // --- Tak Sound Components ---
-
-    // 1. Noise Click (The "T" consonant)
-    const noise = ctx.createBufferSource();
-    noise.buffer = noiseBufferRef.current;
-    const noiseFilter = ctx.createBiquadFilter();
-    const noiseGain = ctx.createGain();
-
-    noiseFilter.type = "highpass";
-    noiseFilter.frequency.value = 3000; // Very high HPF for sharp click
-    noise.connect(noiseFilter);
-    noiseFilter.connect(noiseGain);
-    noiseGain.connect(ctx.destination);
-
-    // 2. Tonal Knock (The "ak" vowel)
-    const osc = ctx.createOscillator();
-    const oscGain = ctx.createGain();
-    osc.connect(oscGain);
-    oscGain.connect(ctx.destination);
+    // We ignore 'time' for scheduling because HTML5 Audio plays 'now'.
+    // The scheduler handles the 'when' via setTimeout/lookahead.
 
     if (beatCount % beatsPerMeasure === 0 && stressFirstBeat) {
-      // Accent: MUCH Louder, Higher pitch "TAK"
-      noiseGain.gain.setValueAtTime(1.0, t);
-      noiseGain.gain.exponentialRampToValueAtTime(0.01, t + 0.05);
-
-      osc.type = "sine";
-      osc.frequency.setValueAtTime(2500, t); // High pitch "Ping"
-      osc.frequency.exponentialRampToValueAtTime(100, t + 0.1);
-
-      oscGain.gain.setValueAtTime(1.0, t); // Max volume
-      oscGain.gain.exponentialRampToValueAtTime(0.01, t + 0.1);
+      click2Ref.current.currentTime = 0;
+      click2Ref.current.play().catch((e) => console.error(e));
     } else {
-      // Beat: Softer, Lower pitch "tuk"
-      noiseGain.gain.setValueAtTime(1.0, t); // Very Quiet noise
-      noiseGain.gain.exponentialRampToValueAtTime(0.01, t + 0.05);
-
-      osc.type = "sine";
-      osc.frequency.setValueAtTime(1500, t); // Medium pitch
-      osc.frequency.exponentialRampToValueAtTime(100, t + 0.1);
-
-      oscGain.gain.setValueAtTime(1.0, t); // Quiet body
-      oscGain.gain.exponentialRampToValueAtTime(0.01, t + 0.1);
+      click1Ref.current.currentTime = 0;
+      click1Ref.current.play().catch((e) => console.error(e));
     }
-
-    // Start
-    noise.start(t);
-    noise.stop(t + 0.1);
-    osc.start(t);
-    osc.stop(t + 0.1);
 
     // UI Update
     setCount(beatCount % beatsPerMeasure);
@@ -147,10 +82,6 @@ export default function CountMeter2({ setShowCountMeter }: MetronomeProps) {
   };
 
   const startStop = () => {
-    if (audioContextRef.current?.state === "suspended") {
-      audioContextRef.current.resume();
-    }
-
     if (isPlaying) {
       if (timerIDRef.current) window.clearTimeout(timerIDRef.current);
       setIsPlaying(false);
@@ -162,58 +93,6 @@ export default function CountMeter2({ setShowCountMeter }: MetronomeProps) {
       timerIDRef.current = window.setTimeout(scheduler, lookahead);
       setIsPlaying(true);
     }
-  };
-
-  const handleBpmChange = (value: number[]) => {
-    setBpm(value[0]);
-  };
-
-  const adjustBpm = (amount: number) => {
-    setBpm((prev) => Math.max(20, Math.min(300, prev + amount)));
-  };
-
-  const handleTap = () => {
-    const now = performance.now();
-    const times = tapTimesRef.current;
-
-    // Remove taps older than 2 seconds to reset chain
-    if (times.length > 0 && now - times[times.length - 1] > 2000) {
-      tapTimesRef.current = [now];
-      return;
-    }
-
-    tapTimesRef.current = [...times, now];
-
-    if (tapTimesRef.current.length > 1) {
-      const intervals = [];
-      for (let i = 1; i < tapTimesRef.current.length; i++) {
-        intervals.push(tapTimesRef.current[i] - tapTimesRef.current[i - 1]);
-      }
-      const averageInterval =
-        intervals.reduce((a, b) => a + b, 0) / intervals.length;
-      const newBpm = Math.round(60000 / averageInterval);
-      if (newBpm >= 20 && newBpm <= 300) {
-        setBpm(newBpm);
-      }
-    }
-
-    // Keep only last 4 taps
-    if (tapTimesRef.current.length > 4) {
-      tapTimesRef.current.shift();
-    }
-  };
-
-  // Tempo markings
-  const getTempoMarking = (bpm: number) => {
-    if (bpm < 40) return "Grave";
-    if (bpm < 60) return "Largo";
-    if (bpm < 66) return "Larghetto";
-    if (bpm < 76) return "Adagio";
-    if (bpm < 108) return "Andante";
-    if (bpm < 120) return "Moderato";
-    if (bpm < 168) return "Allegro";
-    if (bpm < 200) return "Presto";
-    return "Prestissimo";
   };
 
   return (
