@@ -8,6 +8,14 @@ interface MetronomeProps {
   setShowCountMeter: (show: boolean) => void;
 }
 
+const click1Url = "//daveceddia.com/freebies/react-metronome/click1.wav";
+const click2Url = "//daveceddia.com/freebies/react-metronome/click2.wav";
+
+const click1Audio = new Audio(click1Url);
+click1Audio.preload = "auto";
+const click2Audio = new Audio(click2Url);
+click2Audio.preload = "auto";
+
 export default function CountMeter2({ setShowCountMeter }: MetronomeProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [bpm, setBpm] = useState(100);
@@ -17,12 +25,7 @@ export default function CountMeter2({ setShowCountMeter }: MetronomeProps) {
   const [count, setCount] = useState(0);
   const [stressFirstBeat, setStressFirstBeat] = useState(true);
 
-  // Audio Refs (matching CountMeter.tsx)
-  const click1 = "//daveceddia.com/freebies/react-metronome/click1.wav";
-  const click2 = "//daveceddia.com/freebies/react-metronome/click2.wav";
-
-  const click1Ref = useRef(new Audio(click1));
-  const click2Ref = useRef(new Audio(click2));
+  // Audio Refs (removed, using global instances)
 
   // Timer Refs
   const timerIDRef = useRef<number | null>(null);
@@ -43,11 +46,11 @@ export default function CountMeter2({ setShowCountMeter }: MetronomeProps) {
     // The scheduler handles the 'when' via setTimeout/lookahead.
 
     if (beatCount % beatsPerMeasure === 0 && stressFirstBeat) {
-      click2Ref.current.currentTime = 0;
-      click2Ref.current.play().catch((e) => console.error(e));
+      click2Audio.currentTime = 0;
+      click2Audio.play().catch((e) => console.error(e));
     } else {
-      click1Ref.current.currentTime = 0;
-      click1Ref.current.play().catch((e) => console.error(e));
+      click1Audio.currentTime = 0;
+      click1Audio.play().catch((e) => console.error(e));
     }
 
     // UI Update
@@ -115,38 +118,7 @@ export default function CountMeter2({ setShowCountMeter }: MetronomeProps) {
       {/* Content */}
       <div className="flex-1 flex flex-col p-6 gap-6 overflow-y-auto">
         {/* BPM Display & Control */}
-        <div className="flex flex-col items-center gap-2">
-          {/* <span className="text-muted-foreground text-sm uppercase tracking-widest font-medium">
-            {getTempoMarking(bpm)}
-          </span>
-          <div className="flex items-center gap-4 w-full justify-center">
-            <Button variant="outline" size="icon" onClick={() => adjustBpm(-1)}>
-              <Minus className="w-4 h-4" />
-            </Button>
-            <div className="flex flex-col items-center">
-              <span className="font-display text-6xl text-foreground font-bold tabular-nums">
-                {bpm}
-              </span>
-              <span className="text-xs text-muted-foreground tracking-widest">
-                BPM
-              </span>
-            </div>
-            <Button variant="outline" size="icon" onClick={() => adjustBpm(1)}>
-              <Plus className="w-4 h-4" />
-            </Button>
-          </div> */}
-
-          {/* <div className="w-full px-2 pt-4">
-            <Slider
-              value={[bpm]}
-              min={20}
-              max={260}
-              step={1}
-              onValueChange={handleBpmChange}
-              className="w-full"
-            />
-          </div> */}
-        </div>
+        <div className="flex flex-col items-center gap-2"></div>
 
         {/* Visual Beats */}
         <div className="flex flex-col mt-[101px] gap-3 p-4 bg-muted/30 rounded-xl border border-border/50">
@@ -219,21 +191,6 @@ export default function CountMeter2({ setShowCountMeter }: MetronomeProps) {
               />
             </div>
           </div>
-
-          {/* <Button
-            variant="secondary"
-            className="w-full py-8 rounded-xl border-2 border-transparent active:border-primary/50 transition-all active:scale-[0.99]"
-            onClick={handleTap}
-          >
-            <div className="flex flex-col items-center gap-1">
-              <span className="font-display font-bold text-lg tracking-widest">
-                TAP
-              </span>
-              <span className="text-[10px] text-muted-foreground uppercase">
-                Tap rhythm to set tempo
-              </span>
-            </div>
-          </Button> */}
         </div>
         {/* Start/Stop Button */}
         <Button
