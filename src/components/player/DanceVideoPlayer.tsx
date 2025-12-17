@@ -9,7 +9,6 @@ import { useCamera } from "@/hooks/useCamera";
 import { useVideoLoop } from "@/hooks/useVideoLoop";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import Metronome from "./CountMeter";
 import CountMeter2 from "./CountMeter2";
 
 interface DanceVideoPlayerProps {
@@ -43,7 +42,6 @@ export const DanceVideoPlayer: React.FC<DanceVideoPlayerProps> = ({
   const [viewMode, setViewMode] = useState<ViewMode>("front");
   const [activeSection, setActiveSection] = useState<string | null>(null);
   const [showSidebar, setShowSidebar] = useState(false);
-  const [showCountMeter, setShowCountMeter] = useState(false);
   const [showCountMeter2, setShowCountMeter2] = useState(false);
   const [controlsVisible, setControlsVisible] = useState(true);
 
@@ -302,7 +300,7 @@ export const DanceVideoPlayer: React.FC<DanceVideoPlayerProps> = ({
             <h1 className="font-display text-2xl tracking-wide">{title}</h1>
           </div>
         )}
-        {!showSidebar && !showCountMeter && (
+        {!showSidebar && (
           <button
             className="absolute top-6 right-6 z-10 px-4 py-2 bg-card/80 backdrop-blur-sm rounded-lg text-sm font-medium bg-primary/20 text-primary hover:bg-primary/30 transition-colors"
             onClick={() => setShowSidebar(!showSidebar)}
@@ -311,21 +309,19 @@ export const DanceVideoPlayer: React.FC<DanceVideoPlayerProps> = ({
           </button>
         )}
 
-        {!showCountMeter && !showSidebar && (
+        {!showSidebar && (
           <div className="absolute top-6 right-8 mr-[8rem] z-10 flex gap-2">
-            {!showCountMeter && (
-              <button
-                className={cn(
-                  "px-4 py-2 bg-card/80 backdrop-blur-sm rounded-lg text-sm font-medium transition-colors",
-                  showCountMeter2
-                    ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                    : "bg-primary/20 text-primary hover:bg-primary/30"
-                )}
-                onClick={() => setShowCountMeter2(!showCountMeter2)}
-              >
-                Metronome
-              </button>
-            )}
+            <button
+              className={cn(
+                "px-4 py-2 bg-card/80 backdrop-blur-sm rounded-lg text-sm font-medium transition-colors",
+                showCountMeter2
+                  ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                  : "bg-primary/20 text-primary hover:bg-primary/30"
+              )}
+              onClick={() => setShowCountMeter2(!showCountMeter2)}
+            >
+              Metronome
+            </button>
           </div>
         )}
 
@@ -344,7 +340,7 @@ export const DanceVideoPlayer: React.FC<DanceVideoPlayerProps> = ({
           {isCameraOn && (
             <div className="w-1/2 h-full bg-black border-r border-border/20 z-10 transition-all duration-300 ease-in-out">
               <CameraPreview
-                isMirrored={isMirrored}
+                isMirrored={true}
                 onClose={handleCameraToggle}
                 onVideoRef={attachStreamToVideo}
                 mode="split"
@@ -512,7 +508,6 @@ export const DanceVideoPlayer: React.FC<DanceVideoPlayerProps> = ({
           setShowSidebar={setShowSidebar}
         />
       )}
-      {showCountMeter && <Metronome setShowCountMeter={setShowCountMeter} />}
       {showCountMeter2 && (
         <CountMeter2 setShowCountMeter={setShowCountMeter2} />
       )}

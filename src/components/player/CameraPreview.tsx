@@ -46,7 +46,7 @@ export const CameraPreview: React.FC<CameraPreviewProps> = ({
           onClick={onClose}
           className="h-6 w-6 text-white/80 hover:text-white hover:bg-white/20"
         >
-          <X className="w-4 h-4" />
+          <X className="w-4 h-4 cursor-pointer" />
         </Button>
       </div>
 
