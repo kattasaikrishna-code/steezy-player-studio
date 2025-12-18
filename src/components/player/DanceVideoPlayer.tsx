@@ -10,6 +10,7 @@ import { useVideoLoop } from "@/hooks/useVideoLoop";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import CountMeter2 from "./CountMeter2";
+import { useMetronome } from "@/hooks/useMetronome";
 
 interface DanceVideoPlayerProps {
   sources: { front: string; back: string };
@@ -44,6 +45,9 @@ export const DanceVideoPlayer: React.FC<DanceVideoPlayerProps> = ({
   const [showSidebar, setShowSidebar] = useState(false);
   const [showCountMeter2, setShowCountMeter2] = useState(false);
   const [controlsVisible, setControlsVisible] = useState(true);
+
+  // 3. Metronome Hook
+  const metronome = useMetronome();
 
   // 3. Derived
   const videoRef = viewMode === "front" ? videoRefFront : videoRefBack;
@@ -509,7 +513,18 @@ export const DanceVideoPlayer: React.FC<DanceVideoPlayerProps> = ({
         />
       )}
       {showCountMeter2 && (
-        <CountMeter2 setShowCountMeter={setShowCountMeter2} />
+        <CountMeter2
+          setShowCountMeter={setShowCountMeter2}
+          isPlaying={metronome.isPlaying}
+          bpm={metronome.bpm}
+          setBpm={metronome.setBpm}
+          beatsPerMeasure={metronome.beatsPerMeasure}
+          setBeatsPerMeasure={metronome.setBeatsPerMeasure}
+          count={metronome.count}
+          stressFirstBeat={metronome.stressFirstBeat}
+          setStressFirstBeat={metronome.setStressFirstBeat}
+          startStop={metronome.startStop}
+        />
       )}
     </div>
   );

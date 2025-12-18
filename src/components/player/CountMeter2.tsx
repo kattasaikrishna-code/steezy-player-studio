@@ -6,98 +6,29 @@ import { cn } from "@/lib/utils";
 
 interface MetronomeProps {
   setShowCountMeter: (show: boolean) => void;
+  isPlaying: boolean;
+  bpm: number;
+  setBpm: (bpm: number) => void;
+  beatsPerMeasure: number;
+  setBeatsPerMeasure: (beats: number) => void;
+  count: number;
+  stressFirstBeat: boolean;
+  setStressFirstBeat: (stress: boolean) => void;
+  startStop: () => void;
 }
 
-const click1Url = "//daveceddia.com/freebies/react-metronome/click1.wav";
-const click2Url = "//daveceddia.com/freebies/react-metronome/click2.wav";
-
-const click1Audio = new Audio(click1Url);
-click1Audio.preload = "auto";
-const click2Audio = new Audio(click2Url);
-click2Audio.preload = "auto";
-
-export default function CountMeter2({ setShowCountMeter }: MetronomeProps) {
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [bpm, setBpm] = useState(100);
-
-  const [beatsPerMeasure, setBeatsPerMeasure] = useState(4);
-  const bpmRef = useRef(bpm);
-  const [count, setCount] = useState(0);
-  const [stressFirstBeat, setStressFirstBeat] = useState(true);
-
-  // Audio Refs (removed, using global instances)
-
-  // Timer Refs
-  const timerIDRef = useRef<number | null>(null);
-  const nextNoteTimeRef = useRef<number>(0);
-  const lookahead = 25.0; // milliseconds
-  const scheduleAheadTime = 0.1; // seconds
-  const currentBeatIndexRef = useRef(0);
-
-  // Logic Ref
-  const playClickRef = useRef((time: number, beatCount: number) => {});
-
-  // Tap Tempo Refs
-  const tapTimesRef = useRef<number[]>([]);
-
-  // Sound Generation using HTML5 Audio (Exact match to CountMeter)
-  const playClick = (time: number, beatCount: number) => {
-    // We ignore 'time' for scheduling because HTML5 Audio plays 'now'.
-    // The scheduler handles the 'when' via setTimeout/lookahead.
-
-    if (beatCount % beatsPerMeasure === 0 && stressFirstBeat) {
-      click2Audio.currentTime = 0;
-      click2Audio.play().catch((e) => console.error(e));
-    } else {
-      click1Audio.currentTime = 0;
-      click1Audio.play().catch((e) => console.error(e));
-    }
-
-    // UI Update
-    setCount(beatCount % beatsPerMeasure);
-  };
-
-  // Update ref
-  useEffect(() => {
-    playClickRef.current = playClick;
-  }, [stressFirstBeat, beatsPerMeasure, playClick]); // Added playClick to dependencies
-
-  // Ensure bpmRef is always in sync with state
-  useEffect(() => {
-    bpmRef.current = bpm;
-  }, [bpm]);
-
-  const nextNote = () => {
-    const secondsPerBeat = 60.0 / bpmRef.current;
-    nextNoteTimeRef.current += secondsPerBeat;
-  };
-
-  const scheduler = () => {
-    const currentTime = performance.now() / 1000;
-    while (nextNoteTimeRef.current < currentTime + scheduleAheadTime) {
-      if (currentTime - nextNoteTimeRef.current < 0.1) {
-        playClickRef.current(0, currentBeatIndexRef.current);
-      }
-      nextNote();
-      currentBeatIndexRef.current++;
-    }
-    timerIDRef.current = window.setTimeout(scheduler, lookahead);
-  };
-
-  const startStop = () => {
-    if (isPlaying) {
-      if (timerIDRef.current) window.clearTimeout(timerIDRef.current);
-      setIsPlaying(false);
-      setCount(0);
-      currentBeatIndexRef.current = 0;
-    } else {
-      currentBeatIndexRef.current = 0;
-      nextNoteTimeRef.current = performance.now() / 1000 + 0.05;
-      timerIDRef.current = window.setTimeout(scheduler, lookahead);
-      setIsPlaying(true);
-    }
-  };
-
+export default function CountMeter2({
+  setShowCountMeter,
+  isPlaying,
+  bpm,
+  setBpm,
+  beatsPerMeasure,
+  setBeatsPerMeasure,
+  count,
+  stressFirstBeat,
+  setStressFirstBeat,
+  startStop,
+}: MetronomeProps) {
   return (
     <div className="w-80 bg-card border-l border-border flex flex-col h-full shadow-2xl z-50">
       {/* Header */}
@@ -110,12 +41,6 @@ export default function CountMeter2({ setShowCountMeter }: MetronomeProps) {
           size="iconSm"
           onClick={() => {
             setShowCountMeter(false);
-            if (isPlaying) {
-              if (timerIDRef.current) window.clearTimeout(timerIDRef.current);
-              setIsPlaying(false);
-              setCount(0);
-              currentBeatIndexRef.current = 0;
-            }
           }}
           className="h-6 w-6 text-muted-foreground hover:text-foreground"
         >
@@ -125,57 +50,56 @@ export default function CountMeter2({ setShowCountMeter }: MetronomeProps) {
 
       {/* Content */}
       <div className="flex-1 flex flex-col p-6 gap-6 overflow-y-auto">
-        {/* BPM Display & Control */}
-        <div className="flex flex-col items-center gap-2"></div>
-
-        {/* Visual Beats */}
-        <div className="flex flex-col mt-[101px] gap-3 p-4 bg-muted/30 rounded-xl border border-border/50">
-          <div className="flex justify-between items-center">
-            <span className="text-xs font-medium text-muted-foreground uppercase">
-              Beats
-            </span>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="iconSm"
-                onClick={() =>
-                  setBeatsPerMeasure(Math.max(1, beatsPerMeasure - 1))
-                }
-                className="h-6 w-6 rounded-full border border-border"
-              >
-                <Minus className="w-3 h-3" />
-              </Button>
-              <span className="w-4 text-center text-sm font-bold">
-                {beatsPerMeasure}
+        <div className="flex-1 flex items-center justify-center">
+          {/* Visual Beats */}
+          <div className="flex flex-col w-full gap-3 p-4 bg-muted/30 rounded-xl border border-border/50">
+            <div className="flex justify-between items-center">
+              <span className="text-xs font-medium text-muted-foreground uppercase">
+                Beats
               </span>
-              <Button
-                variant="ghost"
-                size="iconSm"
-                onClick={() =>
-                  setBeatsPerMeasure(Math.min(16, beatsPerMeasure + 1))
-                }
-                className="h-6 w-6 rounded-full border border-border"
-              >
-                <Plus className="w-3 h-3" />
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="iconSm"
+                  onClick={() =>
+                    setBeatsPerMeasure(Math.max(1, beatsPerMeasure - 1))
+                  }
+                  className="h-6 w-6 rounded-full border border-border"
+                >
+                  <Minus className="w-3 h-3" />
+                </Button>
+                <span className="w-4 text-center text-sm font-bold">
+                  {beatsPerMeasure}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="iconSm"
+                  onClick={() =>
+                    setBeatsPerMeasure(Math.min(16, beatsPerMeasure + 1))
+                  }
+                  className="h-6 w-6 rounded-full border border-border"
+                >
+                  <Plus className="w-3 h-3" />
+                </Button>
+              </div>
             </div>
-          </div>
-          <div className="flex flex-wrap justify-center gap-2 min-h-[40px] items-center">
-            {Array.from({ length: beatsPerMeasure }).map((_, i) => (
-              <div
-                key={i}
-                className={cn(
-                  "w-3 h-3 rounded-full transition-all duration-75",
-                  isPlaying && count === i
-                    ? "bg-primary scale-125 shadow-[0_0_10px_hsl(var(--primary))]"
-                    : "bg-muted-foreground/30"
-                )}
-              />
-            ))}
+            <div className="flex flex-wrap justify-center gap-2 min-h-[40px] items-center">
+              {Array.from({ length: beatsPerMeasure }).map((_, i) => (
+                <div
+                  key={i}
+                  className={cn(
+                    "w-3 h-3 rounded-full transition-all duration-150",
+                    isPlaying && count === i
+                      ? "bg-primary scale-125 shadow-[0_0_10px_hsl(var(--primary))]"
+                      : "bg-muted-foreground/30"
+                  )}
+                />
+              ))}
+            </div>
           </div>
         </div>
 
-        {/* TAP Button */}
+        {/* TAP Button / First Beat Switch */}
         <div className="flex flex-col gap-2 mt-auto">
           <div className="flex items-center justify-between px-1">
             <label
