@@ -108,7 +108,15 @@ export default function CountMeter2({ setShowCountMeter }: MetronomeProps) {
         <Button
           variant="ghost"
           size="iconSm"
-          onClick={() => setShowCountMeter(false)}
+          onClick={() => {
+            setShowCountMeter(false);
+            if (isPlaying) {
+              if (timerIDRef.current) window.clearTimeout(timerIDRef.current);
+              setIsPlaying(false);
+              setCount(0);
+              currentBeatIndexRef.current = 0;
+            }
+          }}
           className="h-6 w-6 text-muted-foreground hover:text-foreground"
         >
           <CircleX className="w-4 h-4" />

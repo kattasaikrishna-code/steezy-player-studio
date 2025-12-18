@@ -189,7 +189,7 @@ export const VideoControls: React.FC<VideoControlsProps> = ({
         />
 
         {/* View Mode */}
-        <DropdownMenu>
+        {/* <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="control" size="icon">
               <RefreshCw className="w-4 h-4" />
@@ -209,7 +209,19 @@ export const VideoControls: React.FC<VideoControlsProps> = ({
               Back View
             </DropdownMenuItem>
           </DropdownMenuContent>
-        </DropdownMenu>
+        </DropdownMenu> */}
+        <ControlButton
+          icon={<RefreshCw className="w-4 h-4" />}
+          label={
+            viewMode === "front"
+              ? "Change to Back View"
+              : "Change to Front View"
+          }
+          onClick={() =>
+            onViewModeChange(viewMode === "front" ? "back" : "front")
+          }
+          active={false}
+        />
 
         {/* Camera */}
         <ControlButton
