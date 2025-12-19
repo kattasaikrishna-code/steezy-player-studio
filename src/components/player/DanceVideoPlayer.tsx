@@ -1,19 +1,26 @@
 import React, { useRef, useState, useCallback, useEffect } from "react";
 import { Loader2 } from "lucide-react";
-import { VideoSection, ViewMode, LoopRange } from "@/types/player";
+import {
+  VideoSection,
+  ViewMode,
+  LoopRange,
+  VideoSource,
+  VideoQuality,
+} from "@/types/player";
 import { Timeline } from "./Timeline";
 import { VideoControls } from "./VideoControls";
 import { SectionsSidebar } from "./SectionsSidebar";
 import { CameraPreview } from "./CameraPreview";
 import { useCamera } from "@/hooks/useCamera";
 import { useVideoLoop } from "@/hooks/useVideoLoop";
+import { useNetworkStatus } from "@/hooks/useNetworkStatus";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import CountMeter2 from "./CountMeter2";
 import { useMetronome } from "@/hooks/useMetronome";
 
 interface DanceVideoPlayerProps {
-  sources: { front: string; back: string };
+  sources: VideoSource;
   sections: VideoSection[];
   poster?: string;
   title?: string;
@@ -45,9 +52,14 @@ export const DanceVideoPlayer: React.FC<DanceVideoPlayerProps> = ({
   const [showSidebar, setShowSidebar] = useState(false);
   const [showCountMeter2, setShowCountMeter2] = useState(false);
   const [controlsVisible, setControlsVisible] = useState(true);
+  const [quality, setQuality] = useState<VideoQuality>("high");
+  const [bufferingTimer, setBufferingTimer] = useState<number | null>(null);
 
   // 3. Metronome Hook
   const metronome = useMetronome();
+
+  // 4. Network Status
+  const { isOnline } = useNetworkStatus();
 
   // 3. Derived
   const videoRef = viewMode === "front" ? videoRefFront : videoRefBack;
@@ -211,12 +223,64 @@ export const DanceVideoPlayer: React.FC<DanceVideoPlayerProps> = ({
     }
   }, [toggleCamera, isCameraOn]);
 
-  // Camera error toast
+  // Adaptive Quality Switching Logic
   useEffect(() => {
-    if (cameraError) {
-      toast.error(cameraError);
+    if (!isOnline && quality === "high") {
+      setQuality("low");
+      toast.warning(
+        "Internet disconnected. Switched to low quality for uninterrupted playback."
+      );
     }
-  }, [cameraError]);
+  }, [isOnline, quality]);
+
+  useEffect(() => {
+    if (isLoading) {
+      const timer = window.setTimeout(() => {
+        if (quality === "high") {
+          setQuality("low");
+          toast.info("Connection stable but slow. Switching to low quality.");
+        }
+      }, 3000);
+      setBufferingTimer(timer);
+    } else {
+      if (bufferingTimer) {
+        clearTimeout(bufferingTimer);
+        setBufferingTimer(null);
+      }
+    }
+    return () => {
+      if (bufferingTimer) clearTimeout(bufferingTimer);
+    };
+  }, [isLoading, quality]);
+
+  // Sync time when quality changes
+  useEffect(() => {
+    const frontVideo = videoRefFront.current;
+    const backVideo = videoRefBack.current;
+
+    if (frontVideo) {
+      const time = currentTime;
+      const shouldPlay = isPlaying;
+      // The browser might reload the video when src changes
+      // We need to ensure it continues from the correct time
+      const handleLoaded = () => {
+        frontVideo.currentTime = time;
+        if (shouldPlay) frontVideo.play().catch(() => {});
+        frontVideo.removeEventListener("loadedmetadata", handleLoaded);
+      };
+      frontVideo.addEventListener("loadedmetadata", handleLoaded);
+    }
+    if (backVideo) {
+      const time = currentTime;
+      const shouldPlay = isPlaying;
+      const handleLoaded = () => {
+        backVideo.currentTime = time;
+        if (shouldPlay) backVideo.play().catch(() => {});
+        backVideo.removeEventListener("loadedmetadata", handleLoaded);
+      };
+      backVideo.addEventListener("loadedmetadata", handleLoaded);
+    }
+  }, [quality]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -362,7 +426,7 @@ export const DanceVideoPlayer: React.FC<DanceVideoPlayerProps> = ({
             {/* Front Video */}
             <video
               ref={videoRefFront}
-              src={sources.front}
+              src={sources.front[quality]}
               poster={poster}
               className={cn(
                 "w-full h-full object-contain absolute inset-0 transition-opacity duration-300",
@@ -400,7 +464,7 @@ export const DanceVideoPlayer: React.FC<DanceVideoPlayerProps> = ({
             {/* Back Video */}
             <video
               ref={videoRefBack}
-              src={sources.back}
+              src={sources.back[quality]}
               // No poster for back to avoid flash? Or same poster?
               // Usually backup video doesn't need poster if hidden initially
               className={cn(

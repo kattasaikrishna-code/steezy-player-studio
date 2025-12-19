@@ -47,11 +47,16 @@ const demoSections: VideoSection[] = [
   },
 ];
 
-// Demo video sources - Using longer sample videos (~3-4 minutes)
+// Demo video sources - Using multi-quality sources for adaptive playback
 const demoSources = {
-  front:
-    "https://cdn.plyr.io/static/demo/View_From_A_Blue_Moon_Trailer-1080p.mp4",
-  back: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
+  front: {
+    high: "https://cdn.plyr.io/static/demo/View_From_A_Blue_Moon_Trailer-1080p.mp4",
+    low: "https://cdn.plyr.io/static/demo/View_From_A_Blue_Moon_Trailer-720p.mp4",
+  },
+  back: {
+    high: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
+    low: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
+  },
 };
 
 const Index = () => {

@@ -11,13 +11,19 @@ export interface LoopRange {
   end: number;
 }
 
-export interface VideoSource {
-  file: string;
-  label: string;
-  view: 'front' | 'back';
+export interface VideoQualitySources {
+  high: string;
+  low: string;
 }
 
-export type ViewMode = 'front' | 'back';
+export interface VideoSource {
+  front: VideoQualitySources;
+  back: VideoQualitySources;
+}
+
+export type VideoQuality = "high" | "low";
+
+export type ViewMode = "front" | "back";
 
 export interface PlayerState {
   isPlaying: boolean;
