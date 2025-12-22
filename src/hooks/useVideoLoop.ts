@@ -1,16 +1,22 @@
-import { useState, useCallback, useEffect, useRef } from "react";
-import { LoopRange } from "@/types/player";
+import { useState, useCallback, useEffect } from "react";
+import { LoopRange, ViewMode } from "@/types/player";
 
 interface UseVideoLoopProps {
-  videoRef: React.RefObject<HTMLVideoElement>;
+  videoRefFront: React.RefObject<HTMLVideoElement>;
+  videoRefBack: React.RefObject<HTMLVideoElement>;
+  viewMode: ViewMode;
   duration: number;
 }
 
-export const useVideoLoop = ({ videoRef, duration }: UseVideoLoopProps) => {
+export const useVideoLoop = ({ videoRefFront, videoRefBack, viewMode, duration }: UseVideoLoopProps) => {
   const [loopEnabled, setLoopEnabled] = useState(false);
   const [loopRange, setLoopRange] = useState<LoopRange | null>(null);
   const [isSettingLoop, setIsSettingLoop] = useState(false);
-  const loopCheckInterval = useRef<number | null>(null);
+
+  // Get the current active video ref
+  const getActiveVideo = useCallback(() => {
+    return viewMode === "front" ? videoRefFront.current : videoRefBack.current;
+  }, [viewMode, videoRefFront, videoRefBack]);
 
   const setLoopStart = useCallback(
     (time: number) => {
@@ -36,16 +42,14 @@ export const useVideoLoop = ({ videoRef, duration }: UseVideoLoopProps) => {
   }, []);
 
   const toggleLoop = useCallback(() => {
-    if (!videoRef.current) return;
+    const video = getActiveVideo();
+    if (!video) return;
 
     setLoopEnabled((prev) => {
       if (prev) {
-        // Currently enabled, disable it
         return false;
       } else {
-        // Currently disabled, enable with new range
-        const currentTime = videoRef.current!.currentTime;
-        console.log("currentTime", currentTime);
+        const currentTime = video.currentTime;
         const endTime = Math.min(currentTime + 10, duration);
         setLoopRange({
           start: currentTime <= 10 ? 0 : currentTime - 10,
@@ -55,45 +59,68 @@ export const useVideoLoop = ({ videoRef, duration }: UseVideoLoopProps) => {
         return true;
       }
     });
-  }, [videoRef, duration]);
+  }, [getActiveVideo, duration]);
 
   const setLoopFromCurrentTime = useCallback(() => {
-    if (!videoRef.current) return;
+    const video = getActiveVideo();
+    if (!video) return;
 
-    const currentTime = videoRef.current.currentTime;
+    const currentTime = video.currentTime;
     const endTime = Math.min(currentTime + 15, duration);
 
     setLoopRange({ start: currentTime, end: endTime });
     setLoopEnabled(true);
     setIsSettingLoop(false);
-  }, [videoRef, duration]);
+  }, [getActiveVideo, duration]);
 
-  // Check if current time is outside loop range and loop back
+  // Use timeupdate event for loop checking - better Mac compatibility
   useEffect(() => {
-    if (!loopEnabled || !loopRange || !videoRef.current) {
-      if (loopCheckInterval.current) {
-        clearInterval(loopCheckInterval.current);
-        loopCheckInterval.current = null;
-      }
-      return;
-    }
+    if (!loopEnabled || !loopRange) return;
 
-    loopCheckInterval.current = window.setInterval(() => {
-      if (!videoRef.current || !loopRange) return;
-
-      const currentTime = videoRef.current.currentTime;
-
-      if (currentTime >= loopRange.end || currentTime < loopRange.start) {
-        videoRef.current.currentTime = loopRange.start;
-      }
-    }, 100);
-
-    return () => {
-      if (loopCheckInterval.current) {
-        clearInterval(loopCheckInterval.current);
+    const handleTimeUpdate = (video: HTMLVideoElement) => {
+      if (!loopRange || !video) return;
+      
+      const currentTime = video.currentTime;
+      
+      // Only handle loop bounds for the active video
+      if (currentTime >= loopRange.end - 0.1) {
+        video.currentTime = loopRange.start;
+      } else if (currentTime < loopRange.start - 0.5) {
+        video.currentTime = loopRange.start;
       }
     };
-  }, [loopEnabled, loopRange, videoRef]);
+
+    const frontVideo = videoRefFront.current;
+    const backVideo = videoRefBack.current;
+
+    const frontHandler = () => {
+      if (viewMode === "front" && frontVideo) {
+        handleTimeUpdate(frontVideo);
+      }
+    };
+    
+    const backHandler = () => {
+      if (viewMode === "back" && backVideo) {
+        handleTimeUpdate(backVideo);
+      }
+    };
+
+    if (frontVideo) {
+      frontVideo.addEventListener("timeupdate", frontHandler);
+    }
+    if (backVideo) {
+      backVideo.addEventListener("timeupdate", backHandler);
+    }
+
+    return () => {
+      if (frontVideo) {
+        frontVideo.removeEventListener("timeupdate", frontHandler);
+      }
+      if (backVideo) {
+        backVideo.removeEventListener("timeupdate", backHandler);
+      }
+    };
+  }, [loopEnabled, loopRange, videoRefFront, videoRefBack, viewMode]);
 
   return {
     loopEnabled,

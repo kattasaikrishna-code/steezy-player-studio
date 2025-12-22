@@ -11,17 +11,16 @@ export interface LoopRange {
   end: number;
 }
 
-export interface VideoQualitySources {
-  high: string;
-  low: string;
+export interface VideoQuality {
+  label: string;
+  bitrate: number;
+  src: string;
 }
 
-export interface VideoSource {
-  front: VideoQualitySources;
-  back: VideoQualitySources;
+export interface QualitySources {
+  front: VideoQuality[];
+  back: VideoQuality[];
 }
-
-export type VideoQuality = "high" | "low";
 
 export type ViewMode = "front" | "back";
 

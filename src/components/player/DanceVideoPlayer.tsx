@@ -4,23 +4,24 @@ import {
   VideoSection,
   ViewMode,
   LoopRange,
-  VideoSource,
+  QualitySources,
   VideoQuality,
 } from "@/types/player";
 import { Timeline } from "./Timeline";
 import { VideoControls } from "./VideoControls";
 import { SectionsSidebar } from "./SectionsSidebar";
 import { CameraPreview } from "./CameraPreview";
+import { NetworkIndicator } from "./NetworkIndicator";
 import { useCamera } from "@/hooks/useCamera";
 import { useVideoLoop } from "@/hooks/useVideoLoop";
-import { useNetworkStatus } from "@/hooks/useNetworkStatus";
+import { useAdaptiveQuality } from "@/hooks/useAdaptiveQuality";
+import { useNetworkSpeed } from "@/hooks/useNetworkStatus";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import CountMeter2 from "./CountMeter2";
-import { useMetronome } from "@/hooks/useMetronome";
 
 interface DanceVideoPlayerProps {
-  sources: VideoSource;
+  sources: QualitySources;
   sections: VideoSection[];
   poster?: string;
   title?: string;
@@ -52,14 +53,6 @@ export const DanceVideoPlayer: React.FC<DanceVideoPlayerProps> = ({
   const [showSidebar, setShowSidebar] = useState(false);
   const [showCountMeter2, setShowCountMeter2] = useState(false);
   const [controlsVisible, setControlsVisible] = useState(true);
-  const [quality, setQuality] = useState<VideoQuality>("high");
-  const [bufferingTimer, setBufferingTimer] = useState<number | null>(null);
-
-  // 3. Metronome Hook
-  const metronome = useMetronome();
-
-  // 4. Network Status
-  const { isOnline } = useNetworkStatus();
 
   // 3. Derived
   const videoRef = viewMode === "front" ? videoRefFront : videoRefBack;
@@ -76,7 +69,32 @@ export const DanceVideoPlayer: React.FC<DanceVideoPlayerProps> = ({
     toggleLoop,
     setLoopFromCurrentTime,
     setLoopEnabled,
-  } = useVideoLoop({ videoRef, duration });
+  } = useVideoLoop({ videoRefFront, videoRefBack, viewMode, duration });
+
+  const {
+    currentQualityIndex,
+    currentQualityLabel,
+    autoQuality,
+    qualities,
+    setQuality,
+    toggleAutoQuality,
+  } = useAdaptiveQuality({
+    sources,
+    videoRefFront,
+    videoRefBack,
+    viewMode,
+    isPlaying,
+  });
+
+  const networkInfo = useNetworkSpeed();
+
+  // Get current sources based on quality
+  const currentFrontSrc =
+    sources.front[Math.min(currentQualityIndex, sources.front.length - 1)]
+      ?.src || "";
+  const currentBackSrc =
+    sources.back[Math.min(currentQualityIndex, sources.back.length - 1)]?.src ||
+    "";
 
   // 5. Handlers
   const handleTimeUpdate = useCallback(() => {
@@ -223,64 +241,12 @@ export const DanceVideoPlayer: React.FC<DanceVideoPlayerProps> = ({
     }
   }, [toggleCamera, isCameraOn]);
 
-  // Adaptive Quality Switching Logic
+  // Camera error toast
   useEffect(() => {
-    if (!isOnline && quality === "high") {
-      setQuality("low");
-      toast.warning(
-        "Internet disconnected. Switched to low quality for uninterrupted playback."
-      );
+    if (cameraError) {
+      toast.error(cameraError);
     }
-  }, [isOnline, quality]);
-
-  useEffect(() => {
-    if (isLoading) {
-      const timer = window.setTimeout(() => {
-        if (quality === "high") {
-          setQuality("low");
-          toast.info("Connection stable but slow. Switching to low quality.");
-        }
-      }, 3000);
-      setBufferingTimer(timer);
-    } else {
-      if (bufferingTimer) {
-        clearTimeout(bufferingTimer);
-        setBufferingTimer(null);
-      }
-    }
-    return () => {
-      if (bufferingTimer) clearTimeout(bufferingTimer);
-    };
-  }, [isLoading, quality]);
-
-  // Sync time when quality changes
-  useEffect(() => {
-    const frontVideo = videoRefFront.current;
-    const backVideo = videoRefBack.current;
-
-    if (frontVideo) {
-      const time = currentTime;
-      const shouldPlay = isPlaying;
-      // The browser might reload the video when src changes
-      // We need to ensure it continues from the correct time
-      const handleLoaded = () => {
-        frontVideo.currentTime = time;
-        if (shouldPlay) frontVideo.play().catch(() => {});
-        frontVideo.removeEventListener("loadedmetadata", handleLoaded);
-      };
-      frontVideo.addEventListener("loadedmetadata", handleLoaded);
-    }
-    if (backVideo) {
-      const time = currentTime;
-      const shouldPlay = isPlaying;
-      const handleLoaded = () => {
-        backVideo.currentTime = time;
-        if (shouldPlay) backVideo.play().catch(() => {});
-        backVideo.removeEventListener("loadedmetadata", handleLoaded);
-      };
-      backVideo.addEventListener("loadedmetadata", handleLoaded);
-    }
-  }, [quality]);
+  }, [cameraError]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -426,7 +392,7 @@ export const DanceVideoPlayer: React.FC<DanceVideoPlayerProps> = ({
             {/* Front Video */}
             <video
               ref={videoRefFront}
-              src={sources.front[quality]}
+              src={currentFrontSrc}
               poster={poster}
               className={cn(
                 "w-full h-full object-contain absolute inset-0 transition-opacity duration-300",
@@ -464,7 +430,7 @@ export const DanceVideoPlayer: React.FC<DanceVideoPlayerProps> = ({
             {/* Back Video */}
             <video
               ref={videoRefBack}
-              src={sources.back[quality]}
+              src={currentBackSrc}
               // No poster for back to avoid flash? Or same poster?
               // Usually backup video doesn't need poster if hidden initially
               className={cn(
@@ -503,8 +469,18 @@ export const DanceVideoPlayer: React.FC<DanceVideoPlayerProps> = ({
             )}
 
             {/* View mode indicator */}
-            <div className="absolute top-4 left-4 px-3 py-1.5 bg-card/80 backdrop-blur-sm rounded-lg text-sm font-medium z-20">
-              {viewMode.toUpperCase()} VIEW
+            <div className="absolute top-4 left-4 flex items-center gap-2 z-20">
+              <div className="px-3 py-1.5 bg-card/80 backdrop-blur-sm rounded-lg text-sm font-medium">
+                {viewMode.toUpperCase()} VIEW
+              </div>
+              <NetworkIndicator
+                qualityLabel={currentQualityLabel}
+                quality={networkInfo.quality}
+                qualityColor={networkInfo.qualityColor}
+                qualityBgColor={networkInfo.qualityBgColor}
+                isOnline={networkInfo.isOnline}
+                className="backdrop-blur-sm"
+              />
             </div>
 
             {/* Loop indicator */}
@@ -548,6 +524,10 @@ export const DanceVideoPlayer: React.FC<DanceVideoPlayerProps> = ({
                 playbackRate={playbackRate}
                 currentTime={currentTime}
                 duration={duration}
+                currentQualityLabel={currentQualityLabel}
+                autoQuality={autoQuality}
+                qualities={qualities}
+                currentQualityIndex={currentQualityIndex}
                 onPlayPause={handlePlayPause}
                 onMuteToggle={handleMuteToggle}
                 onVolumeChange={handleVolumeChange}
@@ -560,6 +540,8 @@ export const DanceVideoPlayer: React.FC<DanceVideoPlayerProps> = ({
                 onSetLoopPoint={setLoopFromCurrentTime}
                 onPlaybackRateChange={handlePlaybackRateChange}
                 onSeekRelative={handleSeekRelative}
+                onQualityChange={setQuality}
+                onAutoQualityToggle={toggleAutoQuality}
               />
             </div>
           </div>
@@ -577,18 +559,7 @@ export const DanceVideoPlayer: React.FC<DanceVideoPlayerProps> = ({
         />
       )}
       {showCountMeter2 && (
-        <CountMeter2
-          setShowCountMeter={setShowCountMeter2}
-          isPlaying={metronome.isPlaying}
-          bpm={metronome.bpm}
-          setBpm={metronome.setBpm}
-          beatsPerMeasure={metronome.beatsPerMeasure}
-          setBeatsPerMeasure={metronome.setBeatsPerMeasure}
-          count={metronome.count}
-          stressFirstBeat={metronome.stressFirstBeat}
-          setStressFirstBeat={metronome.setStressFirstBeat}
-          startStop={metronome.startStop}
-        />
+        <CountMeter2 setShowCountMeter={setShowCountMeter2} />
       )}
     </div>
   );

@@ -15,6 +15,7 @@ import {
   SkipBack,
   SkipForward,
   Gauge,
+  Settings,
 } from "lucide-react";
 import { ControlButton } from "./ControlButton";
 import { Slider } from "@/components/ui/slider";
@@ -23,9 +24,10 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { ViewMode } from "@/types/player";
+import { ViewMode, VideoQuality } from "@/types/player";
 
 interface VideoControlsProps {
   isPlaying: boolean;
@@ -40,6 +42,11 @@ interface VideoControlsProps {
   playbackRate: number;
   currentTime: number;
   duration: number;
+  // Quality props
+  currentQualityLabel: string;
+  autoQuality: boolean;
+  qualities: VideoQuality[];
+  currentQualityIndex: number;
   onPlayPause: () => void;
   onMuteToggle: () => void;
   onVolumeChange: (value: number) => void;
@@ -52,6 +59,8 @@ interface VideoControlsProps {
   onSetLoopPoint: () => void;
   onPlaybackRateChange: (rate: number) => void;
   onSeekRelative: (seconds: number) => void;
+  onQualityChange: (index: number) => void;
+  onAutoQualityToggle: () => void;
 }
 
 const formatTime = (seconds: number): string => {
@@ -75,6 +84,10 @@ export const VideoControls: React.FC<VideoControlsProps> = ({
   playbackRate,
   currentTime,
   duration,
+  currentQualityLabel,
+  autoQuality,
+  qualities,
+  currentQualityIndex,
   onPlayPause,
   onMuteToggle,
   onVolumeChange,
@@ -87,6 +100,8 @@ export const VideoControls: React.FC<VideoControlsProps> = ({
   onSetLoopPoint,
   onPlaybackRateChange,
   onSeekRelative,
+  onQualityChange,
+  onAutoQualityToggle,
 }) => {
   return (
     <div className="flex items-center justify-between gap-4 px-2">
@@ -210,18 +225,20 @@ export const VideoControls: React.FC<VideoControlsProps> = ({
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu> */}
-        <ControlButton
-          icon={<RefreshCw className="w-4 h-4" />}
-          label={
-            viewMode === "front"
-              ? "Change to Back View"
-              : "Change to Front View"
-          }
-          onClick={() =>
-            onViewModeChange(viewMode === "front" ? "back" : "front")
-          }
-          active={false}
-        />
+        <div className="flex items-center gap-1">
+          <ControlButton
+            icon={<RefreshCw className="w-4 h-4" />}
+            label={
+              viewMode === "front"
+                ? "Change to Back View"
+                : "Change to Front View"
+            }
+            onClick={() =>
+              onViewModeChange(viewMode === "front" ? "back" : "front")
+            }
+            active={false}
+          />
+        </div>
 
         {/* Camera */}
         <ControlButton
@@ -240,6 +257,44 @@ export const VideoControls: React.FC<VideoControlsProps> = ({
 
       {/* Right controls */}
       <div className="flex items-center gap-2">
+        {/* Quality Selection */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="control"
+              size="sm"
+              className="flex flex-row items-center gap-1 min-w-[80px] leading-none"
+            >
+              <Settings className="w-4 h-4" />
+              {autoQuality
+                ? `Auto (${currentQualityLabel})`
+                : currentQualityLabel}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="bg-card border-border">
+            <DropdownMenuItem
+              onClick={onAutoQualityToggle}
+              className={autoQuality ? "bg-primary/20" : ""}
+            >
+              Auto
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            {qualities.map((quality, index) => (
+              <DropdownMenuItem
+                key={quality.label}
+                onClick={() => onQualityChange(index)}
+                className={
+                  !autoQuality && currentQualityIndex === index
+                    ? "bg-primary/20"
+                    : ""
+                }
+              >
+                {quality.label}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+
         {/* Playback Speed */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
