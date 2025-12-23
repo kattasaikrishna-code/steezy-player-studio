@@ -3,131 +3,24 @@ import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
+import { useMetronomeContext } from "@/context/MetronomeContext";
 
 interface MetronomeProps {
   setShowCountMeter: (show: boolean) => void;
 }
 
-const click1Url = "https://daveceddia.com/freebies/react-metronome/click1.wav";
-const click2Url = "https://daveceddia.com/freebies/react-metronome/click2.wav";
-
 export default function CountMeter2({ setShowCountMeter }: MetronomeProps) {
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [bpm, setBpm] = useState(100);
-
-  const [beatsPerMeasure, setBeatsPerMeasure] = useState(4);
-  const bpmRef = useRef(bpm);
-  const [count, setCount] = useState(0);
-  const [stressFirstBeat, setStressFirstBeat] = useState(true);
-
-  // Audio pool for Mac compatibility - create multiple audio instances to avoid overlap issues
-  const audioPoolSize = 4;
-  const click1PoolRef = useRef<HTMLAudioElement[]>([]);
-  const click2PoolRef = useRef<HTMLAudioElement[]>([]);
-  const click1IndexRef = useRef(0);
-  const click2IndexRef = useRef(0);
-
-  // Timer Refs
-  const timerIDRef = useRef<number | null>(null);
-  const nextNoteTimeRef = useRef<number>(0);
-  const lookahead = 25.0; // milliseconds
-  const scheduleAheadTime = 0.1; // seconds
-  const currentBeatIndexRef = useRef(0);
-
-  // Logic Ref
-  const playClickRef = useRef((time: number, beatCount: number) => {});
-
-  // Initialize audio pool
-  useEffect(() => {
-    // Create pool of audio elements to avoid reuse issues on Mac/Safari
-    click1PoolRef.current = Array.from({ length: audioPoolSize }, () => {
-      const audio = new Audio(click1Url);
-      audio.preload = "auto";
-      audio.load();
-      return audio;
-    });
-    
-    click2PoolRef.current = Array.from({ length: audioPoolSize }, () => {
-      const audio = new Audio(click2Url);
-      audio.preload = "auto";
-      audio.load();
-      return audio;
-    });
-
-    return () => {
-      click1PoolRef.current.forEach(audio => {
-        audio.pause();
-        audio.src = "";
-      });
-      click2PoolRef.current.forEach(audio => {
-        audio.pause();
-        audio.src = "";
-      });
-    };
-  }, []);
-
-  // Sound Generation using pooled Audio elements for Mac compatibility
-  const playClick = (time: number, beatCount: number) => {
-    if (beatCount % beatsPerMeasure === 0 && stressFirstBeat) {
-      const audio = click2PoolRef.current[click2IndexRef.current];
-      if (audio) {
-        audio.currentTime = 0;
-        audio.play().catch((e) => console.error("Audio play error:", e));
-        click2IndexRef.current = (click2IndexRef.current + 1) % audioPoolSize;
-      }
-    } else {
-      const audio = click1PoolRef.current[click1IndexRef.current];
-      if (audio) {
-        audio.currentTime = 0;
-        audio.play().catch((e) => console.error("Audio play error:", e));
-        click1IndexRef.current = (click1IndexRef.current + 1) % audioPoolSize;
-      }
-    }
-
-    // UI Update
-    setCount(beatCount % beatsPerMeasure);
-  };
-
-  // Update ref
-  useEffect(() => {
-    playClickRef.current = playClick;
-  }, [stressFirstBeat, beatsPerMeasure, playClick]); // Added playClick to dependencies
-
-  // Ensure bpmRef is always in sync with state
-  useEffect(() => {
-    bpmRef.current = bpm;
-  }, [bpm]);
-
-  const nextNote = () => {
-    const secondsPerBeat = 60.0 / bpmRef.current;
-    nextNoteTimeRef.current += secondsPerBeat;
-  };
-
-  const scheduler = () => {
-    const currentTime = performance.now() / 1000;
-    while (nextNoteTimeRef.current < currentTime + scheduleAheadTime) {
-      if (currentTime - nextNoteTimeRef.current < 0.1) {
-        playClickRef.current(0, currentBeatIndexRef.current);
-      }
-      nextNote();
-      currentBeatIndexRef.current++;
-    }
-    timerIDRef.current = window.setTimeout(scheduler, lookahead);
-  };
-
-  const startStop = () => {
-    if (isPlaying) {
-      if (timerIDRef.current) window.clearTimeout(timerIDRef.current);
-      setIsPlaying(false);
-      setCount(0);
-      currentBeatIndexRef.current = 0;
-    } else {
-      currentBeatIndexRef.current = 0;
-      nextNoteTimeRef.current = performance.now() / 1000 + 0.05;
-      timerIDRef.current = window.setTimeout(scheduler, lookahead);
-      setIsPlaying(true);
-    }
-  };
+  const {
+    isPlaying,
+    bpm,
+    setBpm,
+    beatsPerMeasure,
+    setBeatsPerMeasure,
+    count,
+    stressFirstBeat,
+    setStressFirstBeat,
+    startStop,
+  } = useMetronomeContext();
 
   return (
     <div className="w-80 bg-card border-l border-border flex flex-col h-full shadow-2xl z-50">
@@ -141,12 +34,6 @@ export default function CountMeter2({ setShowCountMeter }: MetronomeProps) {
           size="iconSm"
           onClick={() => {
             setShowCountMeter(false);
-            if (isPlaying) {
-              if (timerIDRef.current) window.clearTimeout(timerIDRef.current);
-              setIsPlaying(false);
-              setCount(0);
-              currentBeatIndexRef.current = 0;
-            }
           }}
           className="h-6 w-6 text-muted-foreground hover:text-foreground"
         >

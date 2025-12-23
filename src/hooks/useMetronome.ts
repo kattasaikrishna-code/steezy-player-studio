@@ -1,13 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 
-const click1Url = "//daveceddia.com/freebies/react-metronome/click1.wav";
-const click2Url = "//daveceddia.com/freebies/react-metronome/click2.wav";
-
-const click1Audio = typeof window !== "undefined" ? new Audio(click1Url) : null;
-const click2Audio = typeof window !== "undefined" ? new Audio(click2Url) : null;
-
-if (click1Audio) click1Audio.preload = "auto";
-if (click2Audio) click2Audio.preload = "auto";
+const click1Url = "https://daveceddia.com/freebies/react-metronome/click1.wav";
+const click2Url = "https://daveceddia.com/freebies/react-metronome/click2.wav";
 
 export function useMetronome() {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -23,16 +17,59 @@ export function useMetronome() {
   const scheduleAheadTime = 0.1; // seconds
   const currentBeatIndexRef = useRef(0);
 
+  // Audio pool for Mac compatibility
+  const audioPoolSize = 4;
+  const click1PoolRef = useRef<HTMLAudioElement[]>([]);
+  const click2PoolRef = useRef<HTMLAudioElement[]>([]);
+  const click1IndexRef = useRef(0);
+  const click2IndexRef = useRef(0);
+
+  // Initialize audio pool
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    click1PoolRef.current = Array.from({ length: audioPoolSize }, () => {
+      const audio = new Audio(click1Url);
+      audio.preload = "auto";
+      audio.load();
+      return audio;
+    });
+
+    click2PoolRef.current = Array.from({ length: audioPoolSize }, () => {
+      const audio = new Audio(click2Url);
+      audio.preload = "auto";
+      audio.load();
+      return audio;
+    });
+
+    return () => {
+      click1PoolRef.current.forEach((audio) => {
+        audio.pause();
+        audio.src = "";
+      });
+      click2PoolRef.current.forEach((audio) => {
+        audio.pause();
+        audio.src = "";
+      });
+    };
+  }, []);
+
   const playClick = useCallback(
     (beatCount: number) => {
-      if (!click1Audio || !click2Audio) return;
-
       if (beatCount % beatsPerMeasure === 0 && stressFirstBeat) {
-        click2Audio.currentTime = 0;
-        click2Audio.play().catch((e) => console.error(e));
+        const audio = click2PoolRef.current[click2IndexRef.current];
+        if (audio) {
+          audio.currentTime = 0;
+          audio.play().catch((e) => console.error("Audio play error:", e));
+          click2IndexRef.current = (click2IndexRef.current + 1) % audioPoolSize;
+        }
       } else {
-        click1Audio.currentTime = 0;
-        click1Audio.play().catch((e) => console.error(e));
+        const audio = click1PoolRef.current[click1IndexRef.current];
+        if (audio) {
+          audio.currentTime = 0;
+          audio.play().catch((e) => console.error("Audio play error:", e));
+          click1IndexRef.current = (click1IndexRef.current + 1) % audioPoolSize;
+        }
       }
 
       setCount(beatCount % beatsPerMeasure);
@@ -74,13 +111,6 @@ export function useMetronome() {
       setIsPlaying(true);
     }
   }, [isPlaying, scheduler]);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (timerIDRef.current) window.clearTimeout(timerIDRef.current);
-    };
-  }, []);
 
   return {
     isPlaying,
